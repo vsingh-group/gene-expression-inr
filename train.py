@@ -102,7 +102,7 @@ class BrainFitting(Dataset):
             
         return self.coords, self.vals
     
-# torch.cuda.set_device(5)
+torch.cuda.set_device(0)
 # pdb.set_trace()
 brain = BrainFitting()
 # print(brain.coords.shape, brain.vals.shape)
@@ -118,7 +118,7 @@ steps_til_summary = 10
 optim = torch.optim.Adam(lr=1e-4, params=brain_siren.parameters())
 
 model_input, ground_truth = next(iter(dataloader))
-model_input, ground_truth = model_input.to(device), ground_truth.to(device)
+model_input, ground_truth = model_input.cuda(), ground_truth.cuda()
 
 for step in range(total_steps):
     model_output, coords = brain_siren(model_input)
@@ -132,7 +132,7 @@ for step in range(total_steps):
     loss.backward()
     optim.step()
 
-# %%
+
 os.makedirs('./models', exist_ok=True)
 torch.save(brain_siren.state_dict(), f'./models/brain_siren_{brain.id}.pth')
 
