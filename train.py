@@ -57,7 +57,7 @@ def get_gen9m3(idx=0, filepath='./data/MicroarrayExpression.csv'):
         _description_
     """
     # ['gene_id', 'spatial_1', 'spatial_2', ...]
-    gen9m3_df = pd.read_csv(filepath)
+    gen9m3_df = pd.read_csv(filepath, header=None)
     
     # convert to tensors
     ids = gen9m3_df.iloc[:, 0].values.tolist()
