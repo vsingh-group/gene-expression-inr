@@ -22,6 +22,8 @@ nii_file = './data/BN_Atlas_246_1mm.nii.gz'
 image = nib.load(nii_file)
 data = image.get_fdata()
 affine = image.affine
+print(image.header)
+
 
 # Function to convert MNI coordinates to voxel indices
 def mni2vox(mni_coords, affine):
