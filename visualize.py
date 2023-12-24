@@ -18,7 +18,7 @@ gen9m3_df.iloc[0, :].values
 # add as a new column to meta_df
 meta_df['vals'] = gen9m3_df.iloc[0, :].values
 
-nii_file = './data/BN_Atlas_246_1mm.nii.gz'
+nii_file = './data/MNI152_T1_1mm.nii.gz'
 image = nib.load(nii_file)
 data = image.get_fdata()
 affine = image.affine
@@ -41,19 +41,10 @@ for index, row in meta_df.iterrows():
 
 # %%
 new_img = nib.Nifti1Image(plot_data, affine=image.affine)
+nib.save(new_img, 'MNI152_T1_1mm+gene.nii')
 
 # Plot static 3d image
 plotting.plot_stat_map(new_img, bg_img=nii_file, display_mode='ortho', cut_coords=[0, 0, 0], threshold=0.1)
 # interactive plot
 view = plotting.view_img(new_img, bg_img=nii_file, threshold=0.1)
-view.open_in_browser()
-
-# %%
-# import abagen
-# expression = abagen.get_expression_data(nii_file)
-# expression
-
-# %%
-region_label = data[voxel_coords]
-region_label.shape
-# %%
+view.save_as_html(f'./MNI152_T1_1mm+gene.html')

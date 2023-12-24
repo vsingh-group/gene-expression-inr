@@ -102,9 +102,9 @@ class BrainFitting(Dataset):
             
         return self.coords, self.vals
     
-torch.cuda.set_device(0)
+torch.cuda.set_device(7)
 # pdb.set_trace()
-brain = BrainFitting()
+brain = BrainFitting(idx=1)
 # print(brain.coords.shape, brain.vals.shape)
 dataloader = DataLoader(brain, batch_size=1, pin_memory=True, num_workers=0)
 
@@ -143,5 +143,5 @@ min_max_dict = {
     'max_coords': brain.max_coords.numpy()
 }
 
-with open('./models/min_max_values.pkl', 'wb') as f:
+with open(f'./models/min_max_values_{brain.id}.pkl', 'wb') as f:
     pickle.dump(min_max_dict, f)

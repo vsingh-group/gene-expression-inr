@@ -46,12 +46,15 @@ def get_results(xyz, model, batch_size=4096):
         results.extend(batch_results)
     return np.array(results)
 
+id = "1058685"
+atlas = "MNI152_T1_1mm_brain"
+# atlas = "MNI152_T1_1mm"
+
 device = torch.device("cuda:7" if torch.cuda.is_available() else "cpu")
-model_path = './models/brain_siren_1058685.pth'
+model_path = f'./models/brain_siren_{id}.pth'
 brain_inr = load_model(model_path).to(device)
 
-
-nii_file = './data/BN_Atlas_246_1mm.nii.gz'
+nii_file = f'./data/{atlas}.nii.gz'
 image = nib.load(nii_file)
 data = image.get_fdata()
 affine = image.affine
@@ -74,7 +77,7 @@ mni_coords = []
 for x in range(x_dim):
     for y in range(y_dim):
         for z in range(z_dim):
-            if data[x, y, z] != 0:
+            if data[x, y, z] > 0:
                 xyz.append([x, y, z])
                 mni_coords.append(vox2mni([x, y, z], affine))
             
@@ -92,4 +95,6 @@ for index, coord in enumerate(xyz):
 new_img = nib.Nifti1Image(plot_data, affine=image.affine)
 view = plotting.view_img(new_img, bg_img=nii_file, threshold=0.1)
 
-view.save_as_html('./brain_view_mask.html')
+view.save_as_html(f'./{atlas}_{id}_mask.html')
+nib.save(new_img, f'./{atlas}_{id}_mask.nii')
+print("Interpolate Success!")
