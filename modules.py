@@ -4,6 +4,14 @@ import torch
 from torch import nn
 import numpy as np
 
+def vox2mni(voxel_coord, affine):
+    voxel_homogeneous = np.array([*voxel_coord, 1])  # Convert to homogeneous coordinates
+    mni_coord = affine @ voxel_homogeneous  # Matrix multiplication
+    return mni_coord[:3]
+
+def mni2vox(mni_coords, affine):
+    voxel_coords = np.linalg.inv(affine) @ np.append(mni_coords, 1)
+    return np.rint(voxel_coords[:3]).astype(int)
 
 class SineLayer(nn.Module):
     def __init__(self, in_features, out_features, bias=True,

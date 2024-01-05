@@ -4,7 +4,7 @@ import nibabel as nib
 import numpy as np
 from nilearn import plotting
 
-from modules import Siren
+from modules import Siren, vox2mni, mni2vox
 
 
 def load_model(model_path):
@@ -60,15 +60,6 @@ data = image.get_fdata()
 affine = image.affine
 header = image.header
 print(header)
-
-def vox2mni(voxel_coord, affine_matrix):
-    voxel_homogeneous = np.array([*voxel_coord, 1])  # Convert to homogeneous coordinates
-    mni_coord = affine_matrix @ voxel_homogeneous  # Matrix multiplication
-    return mni_coord[:3]
-
-def mni2vox(mni_coords, affine):
-    voxel_coords = np.linalg.inv(affine) @ np.append(mni_coords, 1)
-    return np.rint(voxel_coords[:3]).astype(int)
 
 x_dim, y_dim, z_dim = 182, 218, 182  # dimensions from the nii file header
 
