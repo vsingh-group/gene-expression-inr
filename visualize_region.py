@@ -3,7 +3,7 @@ import numpy as np
 import nibabel as nib
 from modules import vox2mni, mni2vox
 
-file = "MNI152_T1_1mm"
+file = "MNI152_T1_1mm_brain"
 atlas = nib.load(f"./data/{file}.nii.gz")
 atlas_data = atlas.get_fdata()
 affine = atlas.affine
