@@ -2,6 +2,7 @@ import os
 import pdb
 import csv
 import pickle
+import logging
 import configargparse
 
 import pandas as pd
@@ -11,17 +12,6 @@ import torch
 from torch.utils.data import Dataset, DataLoader
 
 from modules import *
-
-
-# p = configargparse.ArgumentParser()
-# # p.add_argument('--batch_size', type=int, default=1)
-# p.add_argument('--lr', type=float, default=1e-4, help='learning rate. default=1e-4')
-# p.add_argument('--num_epochs', type=int, default=10000,
-#                help='Number of epochs to train for.')
-# p.add_argument('--steps_til_summary', type=int, default=50,
-#                help='Time interval in seconds until tensorboard summary is saved.')
-# opt = p.parse_args()
-
 
 def get_brain_coords(filepath='./data/GeneRegionTable.xlsx'):
     """Get brain region spatial coordinates.
@@ -102,50 +92,68 @@ class BrainFitting(Dataset):
         if idx > 0: raise IndexError
             
         return self.coords, self.vals
-    
-# torch.cuda.set_device(1)
-# pdb.set_trace()
-brain = BrainFitting(idx=1)
-# print(brain.coords.shape, brain.vals.shape)
-dataloader = DataLoader(brain, batch_size=1, pin_memory=True, num_workers=0)
 
-brain_siren = Siren(in_features=3, out_features=1, hidden_features=256, 
-                    hidden_layers=3, outermost_linear=True)
-brain_siren.cuda()
+logging.basicConfig(filename='./brain_fitting.log', level=logging.INFO, 
+                    format='%(asctime)s %(levelname)s:%(message)s')
 
-total_steps = 500
-steps_til_summary = 10
+p = configargparse.ArgumentParser()
+p.add_argument('--index', type=int, default=0)
+opt = p.parse_args()
 
-optim = torch.optim.Adam(lr=1e-4, params=brain_siren.parameters())
+def main():
+    try:
+        # torch.cuda.set_device(1)
+        # pdb.set_trace()
+        brain = BrainFitting(idx=opt.index)
+        # brain = BrainFitting(idx=0)
 
-model_input, ground_truth = next(iter(dataloader))
-model_input, ground_truth = model_input.cuda(), ground_truth.cuda()
+        dataloader = DataLoader(brain, batch_size=1, pin_memory=True, num_workers=0)
+        brain_siren = Siren(in_features=3, out_features=1, hidden_features=256, 
+                            hidden_layers=3, outermost_linear=True)
+        brain_siren.cuda()
 
-for step in range(total_steps):
-    model_output, coords = brain_siren(model_input)
-    loss = torch.mean((model_output - ground_truth)**2)
-        
-    if not step % steps_til_summary:
-        print("Step %d, Total loss %0.6f" % (step, loss))
+        total_steps = 500
+        steps_til_summary = 10
 
-    optim.zero_grad()
-    # accelerator.backward(loss)
-    loss.backward()
-    optim.step()
+        optim = torch.optim.Adam(lr=1e-4, params=brain_siren.parameters())
+
+        model_input, ground_truth = next(iter(dataloader))
+        model_input, ground_truth = model_input.cuda(), ground_truth.cuda()
+
+        for step in range(total_steps):
+            model_output, coords = brain_siren(model_input)
+            loss = torch.mean((model_output - ground_truth)**2)
+                
+            if not step % steps_til_summary:
+                print("Step %d, Total loss %0.6f" % (step, loss))
+
+            optim.zero_grad()
+            # accelerator.backward(loss)
+            loss.backward()
+            optim.step()
 
 
-os.makedirs('./models', exist_ok=True)
-torch.save(brain_siren.state_dict(), f'./models/{brain.id}.pth')
+        os.makedirs('./models', exist_ok=True)
+        torch.save(brain_siren.state_dict(), f'./models/{brain.id}.pth')
 
-min_max_dict = {
-    'id': brain.id,
-    'min_vals': brain.min_vals.numpy(),
-    'max_vals': brain.max_vals.numpy(),
-    'min_coords': brain.min_coords.numpy(),
-    'max_coords': brain.max_coords.numpy()
-}
-    
-with open(f'./models/min_max_values_{brain.id}.csv', 'a') as file:
-    writer = csv.writer(file)
-    row = [','.join(map(str, value)) for value in min_max_dict.values()]
-    writer.writerow(row)
+        min_max_dict = {
+            'index': opt.index,
+            'id': brain.id,
+            'min_vals': brain.min_vals.numpy().item(),
+            'max_vals': brain.max_vals.numpy().item(),
+            'min_coords': brain.min_coords.numpy().item(),
+            'max_coords': brain.max_coords.numpy().item()
+        }
+            
+        with open(f'./models/max_min_values.csv', 'a') as file:
+            writer = csv.writer(file)
+            row = [str(value) for value in min_max_dict.values()]
+            writer.writerow(row)
+            
+        logging.info(f"[Success]--{opt.index}--{brain.id}")
+
+    except Exception as e:
+        logging.error(f"[Error]--{opt.index}--{brain.id}--{e}")
+
+if __name__ == "__main__":
+    main()
