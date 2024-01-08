@@ -1,5 +1,6 @@
 import os
 import pdb
+import csv
 import pickle
 import configargparse
 
@@ -102,7 +103,7 @@ class BrainFitting(Dataset):
             
         return self.coords, self.vals
     
-torch.cuda.set_device(7)
+# torch.cuda.set_device(1)
 # pdb.set_trace()
 brain = BrainFitting(idx=1)
 # print(brain.coords.shape, brain.vals.shape)
@@ -134,14 +135,17 @@ for step in range(total_steps):
 
 
 os.makedirs('./models', exist_ok=True)
-torch.save(brain_siren.state_dict(), f'./models/brain_siren_{brain.id}.pth')
+torch.save(brain_siren.state_dict(), f'./models/{brain.id}.pth')
 
 min_max_dict = {
+    'id': brain.id,
     'min_vals': brain.min_vals.numpy(),
     'max_vals': brain.max_vals.numpy(),
     'min_coords': brain.min_coords.numpy(),
     'max_coords': brain.max_coords.numpy()
 }
-
-with open(f'./models/min_max_values_{brain.id}.pkl', 'wb') as f:
-    pickle.dump(min_max_dict, f)
+    
+with open(f'./models/min_max_values_{brain.id}.csv', 'a') as file:
+    writer = csv.writer(file)
+    row = [','.join(map(str, value)) for value in min_max_dict.values()]
+    writer.writerow(row)
