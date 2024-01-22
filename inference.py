@@ -2,7 +2,11 @@ import torch
 import pickle
 import nibabel as nib
 import numpy as np
+import pandas as pd
 from nilearn import plotting
+import matplotlib.pyplot as plt
+from matplotlib.colors import LinearSegmentedColormap
+
 
 from modules import Siren, vox2mni, mni2vox
 
@@ -15,9 +19,10 @@ def load_model(model_path):
     return model
 
 
-def get_result(xyz, model):
-    with open('./models/min_max_values.pkl', 'rb') as f:
-        min_max_dict = pickle.load(f)
+def get_result(id, xyz, model):
+    min_max_dict_df = pd.read_csv("abagen_max_min_values.csv")
+    min_max_dict = min_max_dict_df[min_max_dict_df['id'] == id]
+    min_max_dict = min_max_dict.to_dict(orient='records')[0]
 
     min_vals = torch.tensor(min_max_dict['min_vals'])
     max_vals = torch.tensor(min_max_dict['max_vals'])
@@ -38,20 +43,22 @@ def get_result(xyz, model):
     
     return output[:,0].cpu().detach().numpy()
 
-def get_results(xyz, model, batch_size=4096):
+def get_results(id, xyz, model, batch_size=4096):
     results = []
     for i in range(0, len(xyz), batch_size):
         batch_xyz = xyz[i:i+batch_size]
-        batch_results = get_result(batch_xyz, model)
+        batch_results = get_result(id, batch_xyz, model)
         results.extend(batch_results)
     return np.array(results)
 
-id = "1058685"
+# id = "1058685"
+id = "AADAT"
 atlas = "MNI152_T1_1mm_brain"
 # atlas = "MNI152_T1_1mm"
 
-device = torch.device("cuda:7" if torch.cuda.is_available() else "cpu")
-model_path = f'./models/brain_siren_{id}.pth'
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+# model_path = f'./models/brain_siren_{id}.pth'
+model_path = f'./{id}.pth'
 brain_inr = load_model(model_path).to(device)
 
 nii_file = f'./data/{atlas}.nii.gz'
@@ -74,7 +81,7 @@ for x in range(x_dim):
             
 print("Generating Results...")      
 # chooose xyz list
-outputs = get_results(mni_coords, brain_inr)
+outputs = get_results(id, mni_coords, brain_inr)
 
 plot_data = np.zeros(data.shape)
 
@@ -82,9 +89,14 @@ plot_data = np.zeros(data.shape)
 for index, coord in enumerate(xyz):
     # if np.all(coord < np.array(data.shape)) and np.all(coord >= 0):
     plot_data[tuple(coord)] = outputs[index]
+    
         
 new_img = nib.Nifti1Image(plot_data, affine=image.affine)
-view = plotting.view_img(new_img, bg_img=nii_file, threshold=0.1)
+view = plotting.view_img(new_img,
+                         bg_img=nii_file,
+                         threshold=1e-6,
+                         vmin=0)
+
 
 view.save_as_html(f'./{atlas}_{id}_mask.html')
 nib.save(new_img, f'./{atlas}_{id}_mask.nii')
