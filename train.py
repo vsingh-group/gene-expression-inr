@@ -13,7 +13,27 @@ from torch.utils.data import Dataset, DataLoader
 
 from modules import *
 
-def get_brain_coords(filepath='./data/GeneRegionTable.xlsx'):
+# def get_brain_coords(filepath='./data/GeneRegionTable.xlsx'):
+#     """Get brain region spatial coordinates.
+
+#     Parameters
+#     ----------
+#     filepath : str, optional
+
+#     Returns
+#     -------
+#     coords : torch.tensor, shape=(n_regions, 3)
+#         spatial coordinates in tensor form for pytorch model
+#     """
+#     # ['structure_id', 'Regions', 'mni_x', 'mni_y', 'mni_z',
+#     #  'structure_acronym', 'structure_name']
+#     meta_df = pd.read_excel(filepath)
+    
+#     coords = torch.tensor(meta_df[['mni_x', 'mni_y', 'mni_z']].values, dtype=torch.float32)
+    
+#     return coords
+
+def get_brain_coords(filepath='./data/ClassifiedGeneRegionTable.csv'):
     """Get brain region spatial coordinates.
 
     Parameters
@@ -26,10 +46,10 @@ def get_brain_coords(filepath='./data/GeneRegionTable.xlsx'):
         spatial coordinates in tensor form for pytorch model
     """
     # ['structure_id', 'Regions', 'mni_x', 'mni_y', 'mni_z',
-    #  'structure_acronym', 'structure_name']
-    meta_df = pd.read_excel(filepath)
+    #  'structure_acronym', 'structure_name', 'classification']
+    meta_df = pd.read_csv(filepath)
     
-    coords = torch.tensor(meta_df[['mni_x', 'mni_y', 'mni_z']].values, dtype=torch.float32)
+    coords = torch.tensor(meta_df[['mni_x', 'mni_y', 'mni_z', 'classification']].values, dtype=torch.float32)
     
     return coords
 
@@ -104,11 +124,11 @@ def main():
     try:
         # torch.cuda.set_device(1)
         # pdb.set_trace()
-        brain = BrainFitting(idx=opt.index)
-        # brain = BrainFitting(idx=0)
+        # brain = BrainFitting(idx=opt.index)
+        brain = BrainFitting(idx=0)
 
         dataloader = DataLoader(brain, batch_size=1, pin_memory=True, num_workers=0)
-        brain_siren = Siren(in_features=3, out_features=1, hidden_features=256, 
+        brain_siren = Siren(in_features=4, out_features=1, hidden_features=256, 
                             hidden_layers=3, outermost_linear=True)
         brain_siren.cuda()
 
@@ -133,8 +153,8 @@ def main():
             optim.step()
 
 
-        os.makedirs('./models', exist_ok=True)
-        torch.save(brain_siren.state_dict(), f'./models/{brain.id}.pth')
+        os.makedirs('./models_test', exist_ok=True)
+        torch.save(brain_siren.state_dict(), f'./models_test/{brain.id}.pth')
 
         min_max_dict = {
             'index': opt.index,
@@ -145,7 +165,7 @@ def main():
             'max_coords': brain.max_coords.numpy().item()
         }
             
-        with open(f'./models/max_min_values.csv', 'a') as file:
+        with open(f'./models_test/max_min_values.csv', 'a') as file:
             writer = csv.writer(file)
             row = [str(value) for value in min_max_dict.values()]
             writer.writerow(row)

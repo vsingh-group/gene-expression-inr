@@ -16,8 +16,8 @@ def get_abagen_result(id):
     index_tensor = df.index.values
     return columns[idx], index_tensor, df_tensor
 
-file = "MNI152_T1_1mm_brain"
-# file = "atlas-desikankilliany"
+# file = "MNI152_T1_1mm_brain_mask"
+file = "atlas-desikankilliany"
 atlas = nib.load(f"./data/{file}.nii.gz")
 atlas_data = atlas.get_fdata()
 affine = atlas.affine

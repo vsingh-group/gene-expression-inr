@@ -43,8 +43,8 @@ for index, row in meta_df.iterrows():
 new_img = nib.Nifti1Image(plot_data, affine=image.affine)
 nib.save(new_img, 'MNI152_T1_1mm+gene.nii')
 
-# Plot static 3d image
-plotting.plot_stat_map(new_img, bg_img=nii_file, display_mode='ortho', cut_coords=[0, 0, 0], threshold=0.1)
-# interactive plot
-view = plotting.view_img(new_img, bg_img=nii_file, threshold=0.1)
-view.save_as_html(f'./MNI152_T1_1mm+gene.html')
+# # Plot static 3d image
+# plotting.plot_stat_map(new_img, bg_img=nii_file, display_mode='ortho', cut_coords=[0, 0, 0], threshold=0.1)
+# # interactive plot
+# view = plotting.view_img(new_img, bg_img=nii_file, threshold=0.1)
+# view.save_as_html(f'./MNI152_T1_1mm+gene.html')

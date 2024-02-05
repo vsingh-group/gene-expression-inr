@@ -6,22 +6,22 @@ import pandas as pd
 from nilearn import plotting
 import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
-
+from tqdm import tqdm
 
 from modules import Siren, vox2mni, mni2vox
 
 
 def load_model(model_path):
     checkpoint = torch.load(model_path, map_location=device)
-    model = Siren(in_features=3, out_features=1, hidden_features=256, hidden_layers=3, outermost_linear=True)
+    model = Siren(in_features=4, out_features=1, hidden_features=256, hidden_layers=3, outermost_linear=True)
     model.load_state_dict(checkpoint)
     model.eval() 
     return model
 
 
 def get_result(id, xyz, model):
-    min_max_dict_df = pd.read_csv("abagen_max_min_values.csv")
-    min_max_dict = min_max_dict_df[min_max_dict_df['id'] == id]
+    min_max_dict_df = pd.read_csv("./models_test/max_min_values.csv")
+    min_max_dict = min_max_dict_df[min_max_dict_df['id'] == int(id)]    
     min_max_dict = min_max_dict.to_dict(orient='records')[0]
 
     min_vals = torch.tensor(min_max_dict['min_vals'])
@@ -37,7 +37,7 @@ def get_result(id, xyz, model):
     
     coords = torch.tensor(xyz, dtype=torch.float32).to(device)
     coords = normalize_coord(coords)
-
+    
     output = model(coords)
     output = unnormalize_val(output[0])
     
@@ -51,14 +51,14 @@ def get_results(id, xyz, model, batch_size=4096):
         results.extend(batch_results)
     return np.array(results)
 
-# id = "1058685"
-id = "AADAT"
-atlas = "MNI152_T1_1mm_brain"
+id = "1058685"
+# id = "AADAT"
+atlas = "MNI152_T1_1mm_brain_white"
 # atlas = "MNI152_T1_1mm"
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 # model_path = f'./models/brain_siren_{id}.pth'
-model_path = f'./{id}.pth'
+model_path = f'./models_test/{id}.pth'
 brain_inr = load_model(model_path).to(device)
 
 nii_file = f'./data/{atlas}.nii.gz'
@@ -78,7 +78,9 @@ for x in range(x_dim):
             if data[x, y, z] > 0:
                 xyz.append([x, y, z])
                 mni_coords.append(vox2mni([x, y, z], affine))
-            
+        
+mni_coords = [np.append(coord, 1) for coord in mni_coords] # 1 for white
+
 print("Generating Results...")      
 # chooose xyz list
 outputs = get_results(id, mni_coords, brain_inr)
@@ -92,12 +94,12 @@ for index, coord in enumerate(xyz):
     
         
 new_img = nib.Nifti1Image(plot_data, affine=image.affine)
-view = plotting.view_img(new_img,
-                         bg_img=nii_file,
-                         threshold=1e-6,
-                         vmin=0)
+# view = plotting.view_img(new_img,
+#                          bg_img=nii_file,
+#                          threshold=1e-6,
+#                          vmin=0)
 
 
-view.save_as_html(f'./{atlas}_{id}_mask.html')
+# view.save_as_html(f'./{atlas}_{id}_mask.html')
 nib.save(new_img, f'./{atlas}_{id}_mask.nii')
 print("Interpolate Success!")
