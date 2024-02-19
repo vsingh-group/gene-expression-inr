@@ -53,7 +53,7 @@ def get_results(id, xyz, model, batch_size=4096):
 
 id = "1058685"
 # id = "AADAT"
-atlas = "MNI152_T1_1mm_brain_white"
+atlas = "MNI152_T1_1mm_brain_white_mask"
 # atlas = "MNI152_T1_1mm"
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -101,5 +101,5 @@ new_img = nib.Nifti1Image(plot_data, affine=image.affine)
 
 
 # view.save_as_html(f'./{atlas}_{id}_mask.html')
-nib.save(new_img, f'./{atlas}_{id}_mask.nii')
+nib.save(new_img, f'./{atlas}_{id}.nii.gz')
 print("Interpolate Success!")

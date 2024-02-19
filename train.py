@@ -33,7 +33,7 @@ from modules import *
     
 #     return coords
 
-def get_brain_coords(filepath='./data/ClassifiedGeneRegionTable.csv'):
+def get_brain_coords(filepath='./data/GeneRegionTable4d.csv'):
     """Get brain region spatial coordinates.
 
     Parameters
