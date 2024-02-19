@@ -40,7 +40,8 @@ for key, voxel_coord in voxel_coords.items():
 # %%
 import pandas as pd
 
-meta_df = pd.read_excel("./data/GeneRegionTable.xlsx")
+# meta_df = pd.read_excel("./data/GeneRegionTable.xlsx")
+meta_df = pd.read_csv("data/donor9861/SampleAnnot.csv")
 coords = meta_df[['mni_x', 'mni_y', 'mni_z']].values
 
 classifications = []
@@ -50,4 +51,6 @@ for mni_coord in coords:
     classifications.append(classification)
 
 meta_df['classification'] = classifications
-meta_df.to_csv("./data/GeneRegionTable4d.csv", index=False)
+meta_df.to_csv("./data/donor9861/SampleAnnot4d.csv", index=False)
+
+# %%
