@@ -47,5 +47,5 @@ gene_embedding = embedding.fit_transform(gene_df_embedding)
 
 gene_df_embedding["embedding"] = gene_embedding[:, 0].flatten()
 gene_df_embedding = gene_df_embedding.sort_values(by="embedding", ascending=True)
-gene_df_embedding = gene_df_embedding[['embedding']]
-gene_df_embedding.to_csv("./data/gene_embedding_order.csv")
+# gene_df_embedding = gene_df_embedding[['embedding']]
+gene_df_embedding.to_csv("./data/se.csv")
