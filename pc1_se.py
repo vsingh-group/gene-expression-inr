@@ -45,7 +45,7 @@ gene_df_embedding = gene_df.T
 embedding = SpectralEmbedding(n_components=1)
 gene_embedding = embedding.fit_transform(gene_df_embedding)
 
-gene_df_embedding["embedding"] = gene_embedding[:, 0].flatten()
-gene_df_embedding = gene_df_embedding.sort_values(by="embedding", ascending=True)
+gene_df_embedding["se"] = gene_embedding[:, 0].flatten()
+gene_df_embedding = gene_df_embedding.sort_values(by="se", ascending=True)
 # gene_df_embedding = gene_df_embedding[['embedding']]
 gene_df_embedding.to_csv("./data/se.csv")
