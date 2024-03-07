@@ -48,7 +48,6 @@ class BrainFitting(Dataset):
         
         with open('./centroid_coords.pkl', 'wb') as file:
             pickle.dump(self.coords, file)
-
         
         coords_np = np.array(list(self.coords.values()))
         self.coords = torch.tensor(coords_np, dtype=torch.float32)

@@ -4,3 +4,4 @@ MicroarrayExpression.csv
 *.csv
 *.pth
 *.log
+wandb/
