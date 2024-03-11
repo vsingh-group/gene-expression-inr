@@ -7,4 +7,4 @@ do
     wait
 done
 
-# CUDA_VISIBLE_DEVICES=0 python train_debug.py
+# CUDA_VISIBLE_DEVICES=7 python train_gene_net.py

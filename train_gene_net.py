@@ -22,7 +22,7 @@ def get_train_data(order="pc1"):
     filepath=f'./data/{order}_merged.csv'
     meta_df = pd.read_csv(filepath)
     vals = torch.tensor(meta_df[['value']].values, dtype=torch.float32)
-    coords = torch.tensor(meta_df[['mni_x', 'mni_y', 'mni_z', order, 'classification']].values, dtype=torch.float32)
+    coords = torch.tensor(meta_df[['mni_x', 'mni_y', 'mni_z', 'classification', order]].values, dtype=torch.float32)
     return coords, vals
 
 
@@ -31,11 +31,17 @@ class BrainFitting(Dataset):
         super().__init__()
         self.coords, self.vals = get_train_data(gene_order) # se or pc1
         
+        # Assuming the first four columns are mni_x, mni_y, mni_z, classification
+        self.coords_to_normalize = self.coords[:, :4]  
+        self.coords_fixed = self.coords[:, 4:]  # Assuming the last one column is 'order'
+        
         if normalize:
             self.vals, self.min_vals, self.max_vals = \
                 self.min_max_normalize(self.vals, 0, 1)
             self.coords, self.min_coords, self.max_coords = \
-                self.min_max_normalize(self.coords, -1, 1)
+                self.min_max_normalize(self.coords_to_normalize, -1, 1)
+                
+            self.coords = torch.cat((self.coords_to_normalize, self.coords_fixed), dim=1)
 
     def min_max_normalize(self, tensor, min_range, max_range):
         min_val = torch.min(tensor)
@@ -120,8 +126,18 @@ def train(config, gene_order):
     except Exception as e:
         logging.error(f"[Error]--{gene_order}--{e}")
  
-def main():
+def main_sweep():
     wandb.init(project="brain_fitting", entity="yuxizheng")
+    gene_order = "se"
+    train(wandb.config, gene_order=gene_order)
+    
+def main():
+    wandb.init(project="brain_fitting", entity="yuxizheng", config={
+        "lr": 1e-4,
+        "hidden_layers": 5,
+        "hidden_features": 2048
+    })
+    
     gene_order = "se"
     train(wandb.config, gene_order=gene_order)
 
@@ -130,11 +146,12 @@ if __name__ == "__main__":
         "method": "random", # bayes
         "metric": {"goal": "minimize", "name": "loss"},
         "parameters": {
-            "lr": {"max": 1e-3, "min": 1e-4},
-            "hidden_layers": {"values": [3, 5, 7, 9]},
-            "hidden_features": {"values": [512, 1024, 2048]},
+            "lr": {"max": 5e-4, "min": 1e-4},
+            "hidden_layers": {"values": [3, 5, 7]},
+            "hidden_features": {"values": [512, 1024]},
         },
     }
 
     sweep_id = wandb.sweep(sweep=sweep_configuration, project="brain-gene-sweep")
-    wandb.agent(sweep_id, function=main, count=20)
+    wandb.agent(sweep_id, function=main_sweep, count=40)
+    # main()
