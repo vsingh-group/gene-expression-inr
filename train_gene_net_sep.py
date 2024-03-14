@@ -43,16 +43,17 @@ class BrainFitting(Dataset):
         super().__init__()
         self.coords, self.vals = coords, vals
         
-        self.coords_to_normalize = self.coords[:, :4]  
-        self.coords_fixed = self.coords[:, 4:]  # Assuming the last one column is 'order'
-        
         if normalize:
+            self.coords_to_normalize = self.coords[:, :4]  
+            self.coords_fixed = self.coords[:, 4:]  # Assuming the last one column is 'order'
+        
             self.vals, self.min_vals, self.max_vals = \
                 self.min_max_normalize(self.vals, 0, 1)
-            self.coords, self.min_coords, self.max_coords = \
+            self.coords_to_normalize, self.min_coords, self.max_coords = \
                 self.min_max_normalize(self.coords_to_normalize, -1, 1)
 
             self.coords = torch.cat((self.coords_to_normalize, self.coords_fixed), dim=1)
+            # self.coords = self.coords_to_normalize
 
     def min_max_normalize(self, tensor, min_range, max_range):
         min_val = torch.min(tensor)

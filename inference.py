@@ -3,7 +3,6 @@ import pickle
 import nibabel as nib
 import numpy as np
 import pandas as pd
-from nilearn import plotting
 import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
 from tqdm import tqdm
@@ -16,8 +15,8 @@ min_max_dict_df_path = "./models_test/max_min_values_se_sep.csv"
 
 def load_model(model_path):
     checkpoint = torch.load(model_path, map_location=device)
-    # 256 for normal gene model, 2048 for large net model
-    model = Siren(in_features=5, out_features=1, hidden_features=256, hidden_layers=5, outermost_linear=True)
+    # 256 for normal gene model, 512 for large net model
+    model = Siren(in_features=5, out_features=1, hidden_features=512, hidden_layers=5, outermost_linear=True)
     model.load_state_dict(checkpoint)
     model.eval() 
     return model
@@ -68,8 +67,7 @@ def inference(id, matter, atlas, model_path, all_records=False, order_val=None):
     image = nib.load(nii_file)
     data = image.get_fdata()
     affine = image.affine
-    header = image.header
-    print(header)
+    # print(image.header)
 
     x_dim, y_dim, z_dim = 182, 218, 182  # dimensions from the nii file header
 
@@ -96,7 +94,7 @@ def inference(id, matter, atlas, model_path, all_records=False, order_val=None):
     if order_val:
         mni_coords = [np.append(coord, order_val) for coord in mni_coords]
 
-    print("Generating Results...")      
+    print(f"Generating Results for gene {id}...")      
     # chooose xyz list
     outputs = get_results(id, mni_coords, brain_inr, all_records)
 
@@ -120,14 +118,14 @@ def inference(id, matter, atlas, model_path, all_records=False, order_val=None):
 # id = "1058685"
 matter = "white" # "grey"
 atlas = f"MNI152_T1_1mm_brain_{matter}_mask"
-all_records = False
+all_records = True
 df = pd.read_csv("./data/se.csv")
 
-for i, row in df.iterrows():
+for i, row in tqdm(df.iterrows(), total=df.shape[0]):
     id = row['gene_symbol']
     order_val = row['se']
     if all_records:
-        model_path = f'./models_test/model_se_0.0001_1024_5.pth'
+        model_path = f'./models_test/model_se_0.0002_512_5.pth'
     else:
         model_path = f'./models_test/se_{id}.pth'
     inference(id, matter, atlas, model_path, all_records, order_val)

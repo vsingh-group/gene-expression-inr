@@ -74,6 +74,6 @@ for i, row in df.iterrows():
     
     images.append(image)
 
-imageio.mimsave(f'{matter}_matter_genes.gif', images, duration=1)
+imageio.mimsave(f'gene_interpolation_compare_{matter}.gif', images, duration=1)
 
 # %%

@@ -38,7 +38,7 @@ class BrainFitting(Dataset):
         if normalize:
             self.vals, self.min_vals, self.max_vals = \
                 self.min_max_normalize(self.vals, 0, 1)
-            self.coords, self.min_coords, self.max_coords = \
+            self.coords_to_normalize, self.min_coords, self.max_coords = \
                 self.min_max_normalize(self.coords_to_normalize, -1, 1)
                 
             self.coords = torch.cat((self.coords_to_normalize, self.coords_fixed), dim=1)
@@ -81,7 +81,7 @@ def train(config, gene_order):
                             outermost_linear=True)
         brain_siren.cuda()
 
-        total_steps = 500
+        total_steps = config.total_steps
         steps_til_summary = 50
 
         optim = torch.optim.Adam(lr=config.lr, params=brain_siren.parameters())
@@ -89,9 +89,19 @@ def train(config, gene_order):
         model_input, ground_truth = next(iter(dataloader))
         model_input, ground_truth = model_input.cuda(), ground_truth.cuda()
 
+        prev_loss = 1
+        os.makedirs('./models_test', exist_ok=True)
+
         for step in range(total_steps):
             model_output, coords = brain_siren(model_input)
             loss = torch.mean((model_output - ground_truth)**2)
+            
+            if loss < prev_loss:
+                torch.save(
+                    brain_siren.state_dict(),
+                    f'./models_test/model_{gene_order}_{config.lr}_{config.hidden_features}_{config.hidden_layers}.pth'
+                )
+            prev_loss = loss
             
             wandb.log({"loss": loss.item()})
             if not step % steps_til_summary:
@@ -102,12 +112,7 @@ def train(config, gene_order):
             loss.backward()
             optim.step()
 
-
-        os.makedirs('./models_test', exist_ok=True)
-        torch.save(
-            brain_siren.state_dict(),
-            f'./models_test/model_{gene_order}_{config.lr}_{config.hidden_features}_{config.hidden_layers}.pth')
-
+        
         min_max_dict = {
             'gene_symbol': 'ALL_RECORDS',
             'min_vals': brain.min_vals.numpy().item(),
@@ -116,7 +121,7 @@ def train(config, gene_order):
             'max_coords': brain.max_coords.numpy().item()
         }
             
-        with open(f'./models_test/max_min_values_{gene_order}.csv', 'w') as file:
+        with open(f'./models_test/max_min_values_{gene_order}_sep.csv', 'a') as file:
             writer = csv.writer(file)
             row = [str(value) for value in min_max_dict.values()]
             writer.writerow(row)
@@ -133,25 +138,27 @@ def main_sweep():
     
 def main():
     wandb.init(project="brain_fitting", entity="yuxizheng", config={
-        "lr": 1e-4,
+        "lr": 2e-4,
         "hidden_layers": 5,
-        "hidden_features": 2048
+        "hidden_features": 512,
+        "total_steps": 5000
     })
     
     gene_order = "se"
     train(wandb.config, gene_order=gene_order)
 
 if __name__ == "__main__":
-    sweep_configuration = {
-        "method": "random", # bayes
-        "metric": {"goal": "minimize", "name": "loss"},
-        "parameters": {
-            "lr": {"max": 5e-4, "min": 1e-4},
-            "hidden_layers": {"values": [3, 5, 7]},
-            "hidden_features": {"values": [512, 1024]},
-        },
-    }
+    # sweep_configuration = {
+    #     "method": "random", # bayes
+    #     "metric": {"goal": "minimize", "name": "loss"},
+    #     "parameters": {
+    #         "lr": {"values": [1e-4, 2e-4, 3e-4]},
+    #         "hidden_layers": {"values": [5, 7]},
+    #         "hidden_features": {"values": [512, 1024]},
+    #         "total_steps": 5000
+    #     },
+    # }
 
-    sweep_id = wandb.sweep(sweep=sweep_configuration, project="brain-gene-sweep")
-    wandb.agent(sweep_id, function=main_sweep, count=40)
-    # main()
+    # sweep_id = wandb.sweep(sweep=sweep_configuration, project="brain-gene-sweep")
+    # wandb.agent(sweep_id, function=main_sweep, count=40)
+    main()
