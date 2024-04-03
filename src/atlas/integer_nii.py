@@ -1,7 +1,7 @@
 import nibabel as nib
 import numpy as np
 
-nii = "MNI152_T1_1mm_brain_grey_mask" # grey or white
+nii = "MNI152_T1_1mm_brain_white_mask" # grey or white
 file_path = f'./data/{nii}.nii.gz'
 nii_image = nib.load(file_path)
 
