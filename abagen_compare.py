@@ -7,9 +7,9 @@ def save_results(microarray):
         print(f"{subj}: {microarray[subj].shape}")
         microarray[subj].to_csv(f"./data/abagen_microarray_{subj}.csv")
 
-nii = "MNI152_T1_1mm_brain_grey_mask.nii"
-# nii = "atlas-desikankilliany.nii"
-nii_file = f'./data/{nii}.gz'
+nii = "MNI152_T1_1mm_brain_grey_mask_int"
+# nii = "atlas-desikankilliany"
+nii_file = f'./data/{nii}.nii.gz'
 
 # use all donors, 6 possible
 # get nifti from abagen, voxel level
