@@ -34,7 +34,7 @@ def merge_5d(mode):
     annot = annot.reset_index().rename(columns={'index': 'id'})
 
     merged_df = pd.merge(df_long, annot, on='id')
-    merged_df = merged_df[['gene_symbol', 'id', 'mni_x', 'mni_y', 'mni_z', 'classification', 'value', 'pc1']]
+    merged_df = merged_df[['gene_symbol', 'id', 'mni_x', 'mni_y', 'mni_z', 'classification', 'value', mode]]
     merged_df = merged_df.sort_values(by=['gene_symbol', 'id'])
     merged_df.to_csv(f"data/{mode}_merged.csv", index=False)
 
