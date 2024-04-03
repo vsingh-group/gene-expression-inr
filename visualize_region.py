@@ -35,12 +35,6 @@ for label, value in zip(labels, values):
             atlas_data[tuple(coord)] = value
 
 new_img = nib.Nifti1Image(atlas_data, affine=affine)
-view = plotting.view_img(new_img,
-                         bg_img=atlas,
-                         threshold=0.1,
-                         cmap='cold_white_hot_r')
-
-view.save_as_html(f'./{file}_{id}_abagen.html')
 nib.save(new_img, f'./{file}_{id}_abagen.nii')
 
 
