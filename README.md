@@ -19,6 +19,6 @@
     - `visualize_abagen.py` - visualize abagen result in nii file
     - `visualize_se.py` - generate git files, compare from separate trained result and whole trained result, under se ordering, require nii files to generated first from `inference.py`
     - `visualize.py` - no interpolation, simply map gene points to nii
-    
+
 - `inference.py` - INR interpolation, require trained pth file
 - `main.sh` - training all gene expressions with one command

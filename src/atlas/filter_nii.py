@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
 from tqdm import tqdm
 
-from modules import Siren, vox2mni, mni2vox
+from modules import vox2mni, mni2vox
 
 def filter_nii_files(atlas, threshold):
     nii_file = f'./data/{atlas}.nii.gz'
