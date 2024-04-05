@@ -1,41 +1,50 @@
 # %%
+import os
+from tqdm import tqdm
 import pandas as pd
 import numpy as np
 import nibabel as nib
-from nilearn import plotting
 
-from modules import vox2mni, mni2vox
+# id = "A1BG"
 
-id = "A1BG"
-
-def get_abagen_result(id):
-    df = pd.read_csv("./data/MNI152_T1_1mm_brain_abagen_expression_interpolate_10col.csv", index_col=0)
+def get_abagen_result(id, donor, matter):
+    df = pd.read_csv(f"./data/abagendata/{matter}_interpolate_microarray_{donor}.csv", index_col=0)
     idx = df.columns.get_loc(id)
     columns = df.columns
     df_tensor = df.iloc[:, idx].values
     index_tensor = df.index.values
     return columns[idx], index_tensor, df_tensor
 
-# file = "MNI152_T1_1mm_brain_mask"
-file = "atlas-desikankilliany"
-atlas = nib.load(f"./data/{file}.nii.gz")
-atlas_data = atlas.get_fdata()
-affine = atlas.affine
+def map_abagen_to_nii(id, atlas, matter, donor):
+    # file = "atlas-desikankilliany"
+    atlas = nib.load(f"./data/{atlas}.nii.gz")
+    atlas_data = atlas.get_fdata()
+    affine = atlas.affine
 
-regions = np.unique(atlas_data)
-label_voxel_coordinates = {label: np.argwhere(atlas_data == label) for label in regions}
+    regions = np.unique(atlas_data)
+    label_voxel_coordinates = {label: np.argwhere(atlas_data == label) for label in regions}
 
-id, labels, values = get_abagen_result(id)
+    id, labels, values = get_abagen_result(id, donor, matter)
 
-first = True
-for label, value in zip(labels, values):
-    if label in label_voxel_coordinates:
-        voxel_coords = label_voxel_coordinates[label]
-        for coord in voxel_coords:
-            atlas_data[tuple(coord)] = value
+    first = True
+    for label, value in zip(labels, values):
+        if label in label_voxel_coordinates:
+            voxel_coords = label_voxel_coordinates[label]
+            for coord in voxel_coords:
+                atlas_data[tuple(coord)] = value
 
-new_img = nib.Nifti1Image(atlas_data, affine=affine)
-nib.save(new_img, f'./{file}_{id}_abagen.nii')
+    new_img = nib.Nifti1Image(atlas_data, affine=affine)
+    nib.save(new_img, f'./nii_abagen/{matter}_{id}.nii.gz')
 
+matter = "grey" # "grey"
+donor = "9861"
+atlas = f"MNI152_T1_1mm_brain_{matter}_mask_int"
+df = pd.read_csv(f"./data/abagendata/se_{donor}.csv")
 
+os.makedirs('./nii_abagen', exist_ok=True)
+
+for i, row in tqdm(df.iterrows(), total=df.shape[0]):
+    id = row['gene_symbol']
+    order_val = row['se']
+    map_abagen_to_nii(id, atlas, matter, donor)
 # %%

@@ -5,3 +5,5 @@ MicroarrayExpression.csv
 *.pth
 *.log
 wandb/
+nii_inr_sep/
+nii_abagen/

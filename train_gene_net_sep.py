@@ -14,11 +14,11 @@ from torch.utils.data import Dataset, DataLoader
 from modules import *
 
 
-def get_train_data_sep(order="pc1"):
+def get_train_data_sep(coords_list, donor, order="se"):
     if order != "pc1" and order != "se":
         print("Error in choosing gene order")
         exit(1)
-    filepath=f'./data/{order}_merged.csv'
+    filepath=f'./data/{order}_{donor}_merged.csv'
     meta_df = pd.read_csv(filepath)
 
     val_dic = {}
@@ -30,7 +30,7 @@ def get_train_data_sep(order="pc1"):
         gene_data = meta_df[meta_df['gene_symbol'] == gene]
         
         vals = torch.tensor(gene_data[['value']].values, dtype=torch.float32)
-        coords = torch.tensor(gene_data[['mni_x', 'mni_y', 'mni_z', 'classification', order]].values, dtype=torch.float32)
+        coords = torch.tensor(gene_data[coords_list].values, dtype=torch.float32)
         
         val_dic[gene] = vals
         coords_dic[gene] = coords
@@ -82,7 +82,7 @@ class BrainFitting(Dataset):
 logging.basicConfig(filename='./brain_fitting.log', level=logging.INFO, 
                     format='%(asctime)s %(levelname)s:%(message)s')
 
-def main(gene_order, gene_symbol, coords, vals):
+def main(gene_order, gene_symbol, coords, vals, classfication=True):
     try:
         brain = BrainFitting(coords, vals)
 
@@ -126,9 +126,16 @@ def main(gene_order, gene_symbol, coords, vals):
             'min_coords': brain.min_coords.numpy().item(),
             'max_coords': brain.max_coords.numpy().item()
         }
+        
+        csv_file_path = f'./models_test/max_min_values_{gene_order}_sep.csv'
+        file_exists = os.path.isfile(csv_file_path)
             
-        with open(f'./models_test/max_min_values_{gene_order}_sep.csv', 'a') as file:
+        with open(csv_file_path, 'a') as file:
             writer = csv.writer(file)
+            
+            if not file_exists:
+                writer.writerow(["id", "min_vals", "max_vals", "min_coords", "max_coords"])
+        
             row = [str(value) for value in min_max_dict.values()]
             writer.writerow(row)
             
@@ -138,8 +145,13 @@ def main(gene_order, gene_symbol, coords, vals):
         logging.error(f"[Error]--{gene_order}--{gene_symbol}--{e}")
 
 if __name__ == "__main__":
-    gene_order = "se"    
-    coords_dic, val_dic = get_train_data_sep("se")
+    gene_order = "se"
+    donor = "9861"
+    coord_list = ['mni_x', 'mni_y', 'mni_z']
+    coord_list.append('classification')
+    coord_list.append(gene_order) # comment here to remove additional coords
+    
+    coords_dic, val_dic = get_train_data_sep(coord_list, donor, "se")
     
     for key in coords_dic.keys():
         coords = coords_dic[key]

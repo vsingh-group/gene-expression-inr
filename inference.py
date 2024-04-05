@@ -1,3 +1,4 @@
+import os
 import torch
 import pickle
 import nibabel as nib
@@ -16,7 +17,7 @@ min_max_dict_df_path = "./models_test/max_min_values_se_sep.csv"
 def load_model(model_path):
     checkpoint = torch.load(model_path, map_location=device)
     # 256 for normal gene model, 512 for large net model
-    model = Siren(in_features=5, out_features=1, hidden_features=512, hidden_layers=5, outermost_linear=True)
+    model = Siren(in_features=5, out_features=1, hidden_features=256, hidden_layers=5, outermost_linear=True)
     model.load_state_dict(checkpoint)
     model.eval() 
     return model
@@ -108,18 +109,21 @@ def inference(id, matter, atlas, model_path, all_records=False, order_val=None):
     new_img = nib.Nifti1Image(plot_data, affine=image.affine)
     
     if all_records:
-        save_path = f'./nii_results_full/{matter}_{id}.nii.gz'
+        os.makedirs('./nii_inr_full', exist_ok=True)
+        save_path = f'./nii_inr_full/{matter}_{id}.nii.gz'
     else:
-        save_path = f'./nii_results_sep/{matter}_{id}.nii.gz'
+        os.makedirs('./nii_inr_sep', exist_ok=True)
+        save_path = f'./nii_inr_sep/{matter}_{id}.nii.gz'
     nib.save(new_img, save_path)
     print("Interpolate Success!")
 
 
 # id = "1058685"
 matter = "white" # "grey"
-atlas = f"MNI152_T1_1mm_brain_{matter}_mask"
-all_records = True
-df = pd.read_csv("./data/se.csv")
+donor = "9861"
+atlas = f"MNI152_T1_1mm_brain_{matter}_mask_int"
+all_records = False
+df = pd.read_csv(f"./data/abagendata/se_{donor}.csv")
 
 for i, row in tqdm(df.iterrows(), total=df.shape[0]):
     id = row['gene_symbol']
