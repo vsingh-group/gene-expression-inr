@@ -10,6 +10,22 @@ conda activate inr
 
 `nibabel`, `nilearn`
 
+## Documentations
+
+### Data
+
+- `data/abagendata/abagen_output/...` - abagen output data for baseline only, generated from `abagen_compare.py`
+    -  `<atlas>_microarray_<donor_id>.csv` - region aggregated abagen output w/o interpolation for <donor_id> on atlas
+    -  `<atlas>_interpolation_microarray_<donor_id>.csv` - region aggregated abagen output **with** interpolation for <donor_id> on atlas 
+    -  atlas naming:
+        - `<atlas> == 246` - `BN_Atlas_246_1mm.nii.gz`
+        - `<atlas> == grey` - `MNI152_T1_1mm_brain_grey_mask_int.nii.gz`
+        - `<atlas> == white` - `MNI152_T1_1mm_brain_white_mask_int.nii.gz`
+- `data/abagendata/train/...` - abagen output data for training without region aggregation, only preprocessed (dropped useless measurements)
+    - `microarray`
+
+### Coding
+
 - `src/atlas/...`
     - `filter_nii.py` - filter atlas nii file under certain threshold, `MNI152_T1_1mm_brain_grey.nii.gz` -> `MNI152_T1_1mm_brain_grey_mask.nii.gz`
     - `integer_nii.py` - convert atlas to integer values to fit abagen input requirement, `MNI152_T1_1mm_brain_grey_mask.nii.gz` -> `MNI152_T1_1mm_brain_grey_mask_int.nii.gz`
