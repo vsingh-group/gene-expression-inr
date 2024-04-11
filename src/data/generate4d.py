@@ -42,9 +42,9 @@ def generate4d(filename):
     meta_df.to_csv(f"{filename}_4d.csv", index=False)
 
 
-generate4d("./data/abagendata/annot_9861")
-generate4d("./data/abagendata/annot_10021")
-generate4d("./data/abagendata/annot_12876")
-generate4d("./data/abagendata/annot_14380")
-generate4d("./data/abagendata/annot_15496")
-generate4d("./data/abagendata/annot_15697")
+generate4d("./data/abagendata/train/annotation_9861")
+generate4d("./data/abagendata/train/annotation_10021")
+generate4d("./data/abagendata/train/annotation_12876")
+generate4d("./data/abagendata/train/annotation_14380")
+generate4d("./data/abagendata/train/annotation_15496")
+generate4d("./data/abagendata/train/annotation_15697")

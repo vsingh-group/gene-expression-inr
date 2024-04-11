@@ -18,7 +18,7 @@ def get_train_data_sep(coords_list, donor, order="se"):
     if order != "pc1" and order != "se":
         print("Error in choosing gene order")
         exit(1)
-    filepath=f'./data/{order}_{donor}_merged.csv'
+    filepath=f'./data/abagendata/train/{order}_{donor}_merged.csv'
     meta_df = pd.read_csv(filepath)
 
     val_dic = {}
