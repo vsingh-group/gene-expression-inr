@@ -1,12 +1,9 @@
 import os
 import pdb
 import csv
-import pickle
 import logging
-import configargparse
 
 import pandas as pd
-import matplotlib.pyplot as plt
 
 import wandb
 import torch
@@ -14,30 +11,45 @@ from torch.utils.data import Dataset, DataLoader
 
 from modules import *
 
+def encode_df(df, multires):
+    scaler = MinMaxScaler()
+    df['se'] = scaler.fit_transform(df[['se']])
+    # position embedding
+    embed, _ = get_embedder(multires=multires)
+    embedded_data = embed(df[["se"]])
+    # add embedded_data to gene_df as new columns
+    for i in range(embedded_data.shape[1]):
+        p_f = 'sin' if i % 2 == 0 else 'cos'
+        df[f"se_{p_f}{i}"] = embedded_data[:, i]
+    
+    return df
 
-def get_train_data(order="pc1"):
+def get_train_data(donor, order="pc1", encoding_dim=4):
     if order != "pc1" and order != "se":
         print("Error in choosing gene order")
         exit(1)
-    filepath=f'./data/{order}_merged.csv'
+    filepath=f'./data/abagendata/train/{order}_{donor}_merged.csv'
     meta_df = pd.read_csv(filepath)
     vals = torch.tensor(meta_df[['value']].values, dtype=torch.float32)
-    coords = torch.tensor(meta_df[['mni_x', 'mni_y', 'mni_z', 'classification', order]].values, dtype=torch.float32)
+    meta_df = meta_df.drop(['gene_symbol', 'well_id', 'value'], axis=1)
+    meta_df = encode_df(meta_df, multires=encoding_dim)
+    print(meta_df.head())
+    coords = torch.tensor(meta_df.values, dtype=torch.float32)
     return coords, vals
 
 
 class BrainFitting(Dataset):
-    def __init__(self, gene_order, normalize=True):
+    def __init__(self, donor, gene_order, encoding_dim=4, normalize=True):
         super().__init__()
-        self.coords, self.vals = get_train_data(gene_order) # se or pc1
+        self.coords, self.vals = get_train_data(donor, gene_order, encoding_dim) # se or pc1
         
-        # Assuming the first four columns are mni_x, mni_y, mni_z, classification
-        self.coords_to_normalize = self.coords[:, :4]  
-        self.coords_fixed = self.coords[:, 4:]  # Assuming the last one column is 'order'
+        # Assuming the first 3 columns are mni_x, mni_y, mni_z
+        self.coords_to_normalize = self.coords[:, :3]  
+        self.coords_fixed = self.coords[:, 3:]  # Assuming the last one column is 'order'
         
         if normalize:
-            self.vals, self.min_vals, self.max_vals = \
-                self.min_max_normalize(self.vals, 0, 1)
+            # self.vals, self.min_vals, self.max_vals = \
+            #     self.min_max_normalize(self.vals, 0, 1)
             self.coords_to_normalize, self.min_coords, self.max_coords = \
                 self.min_max_normalize(self.coords_to_normalize, -1, 1)
                 
@@ -70,12 +82,14 @@ class BrainFitting(Dataset):
 logging.basicConfig(filename='./brain_fitting.log', level=logging.INFO, 
                     format='%(asctime)s %(levelname)s:%(message)s')
 
-def train(config, gene_order):
+def train(config, donor):
     try:
-        brain = BrainFitting(gene_order)
+        gene_order = config.gene_order
+        brain = BrainFitting(donor, gene_order, config.encoding_dim)
 
         dataloader = DataLoader(brain, batch_size=1, pin_memory=True, num_workers=0)
-        brain_siren = Siren(in_features=5, out_features=1,
+        brain_siren = Siren(in_features=5+config.encoding_dim*2,
+                            out_features=1,
                             hidden_features=config.hidden_features, 
                             hidden_layers=config.hidden_layers,
                             outermost_linear=True)
@@ -97,12 +111,27 @@ def train(config, gene_order):
             loss = torch.mean((model_output - ground_truth)**2)
             
             if loss < prev_loss:
+                model_path_prefix = (
+                    f"./models_test/model_{config.lr}_"
+                    f"{5 + 2 * config.encoding_dim}x"
+                    f"{config.hidden_features}x"
+                    f"{config.hidden_layers}_"
+                )
+                
+                old_model = f"{model_path_prefix}{prev_loss}.pth"   
+                # Remove the old model file
+                if os.path.exists(old_model):
+                    os.remove(old_model)
+                
+                # Save the new model file
                 torch.save(
                     brain_siren.state_dict(),
-                    f'./models_test/model_{gene_order}_{config.lr}_{config.hidden_features}_{config.hidden_layers}.pth'
+                    f"{model_path_prefix}{loss}.pth"
                 )
-            prev_loss = loss
-            
+                
+                # Update the previous loss
+                prev_loss = loss
+    
             wandb.log({"loss": loss.item()})
             if not step % steps_til_summary:
                 print("Step %d, Total loss %0.6f" % (step, loss))
@@ -114,9 +143,9 @@ def train(config, gene_order):
 
         
         min_max_dict = {
-            'gene_symbol': 'ALL_RECORDS',
-            'min_vals': brain.min_vals.numpy().item(),
-            'max_vals': brain.max_vals.numpy().item(),
+            'id': 'ALL_RECORDS',
+            'min_vals': 0.0,
+            'max_vals': 1.0,
             'min_coords': brain.min_coords.numpy().item(),
             'max_coords': brain.max_coords.numpy().item()
         }
@@ -134,28 +163,30 @@ def train(config, gene_order):
 def main_sweep():
     wandb.init(project="brain_fitting", entity="yuxizheng")
     gene_order = "se"
-    train(wandb.config, gene_order=gene_order)
+    train(wandb.config, donor="9861", gene_order=gene_order)
     
 def main():
-    wandb.init(project="brain_fitting", entity="yuxizheng", config={
-        "lr": 2e-4,
-        "hidden_layers": 5,
+    wandb.init(project="brain_fitting0417", entity="yuxizheng", config={
+        "gene_order": "se",
+        "lr": 1e-4,
+        "hidden_layers": 12,
         "hidden_features": 512,
-        "total_steps": 5000
+        "total_steps": 50,
+        "encoding_dim": 8,
     })
     
-    gene_order = "se"
-    train(wandb.config, gene_order=gene_order)
+    train(wandb.config, donor="9861")
 
 if __name__ == "__main__":
     # sweep_configuration = {
     #     "method": "random", # bayes
     #     "metric": {"goal": "minimize", "name": "loss"},
     #     "parameters": {
-    #         "lr": {"values": [1e-4, 2e-4, 3e-4]},
-    #         "hidden_layers": {"values": [5, 7]},
-    #         "hidden_features": {"values": [512, 1024]},
-    #         "total_steps": 5000
+    #         "lr": {"values": [1e-4]},
+    #         "hidden_layers": {"values": [10]},
+    #         "hidden_features": {"values": [512]},
+    #         "total_steps": 5000,
+    #         "encoding_dim": {"values": [5, 6, 7, 8, 9]},
     #     },
     # }
 

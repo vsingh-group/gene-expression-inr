@@ -8,16 +8,27 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
 from tqdm import tqdm
 
-from modules import Siren, vox2mni, mni2vox
+from modules import *
 
 device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
 # min_max_dict_df_path = "./models_test/max_min_values.csv"
 min_max_dict_df_path = "./models_test/max_min_values_se_sep.csv"
 
-def load_model(model_path):
+def load_model(model_path, all_records=False):
+    if all_records:
+        model = Siren(in_features=21,
+                      out_features=1,
+                      hidden_features=512,
+                      hidden_layers=12,
+                      outermost_linear=True)
+    else:
+        model = Siren(in_features=5,
+                      out_features=1,
+                      hidden_features=256,
+                      hidden_layers=5,
+                      outermost_linear=True)
     checkpoint = torch.load(model_path, map_location=device)
-    # 256 for normal gene model, 512 for large net model
-    model = Siren(in_features=5, out_features=1, hidden_features=256, hidden_layers=5, outermost_linear=True)
+    
     model.load_state_dict(checkpoint)
     model.eval() 
     return model
@@ -39,14 +50,16 @@ def get_result(id, xyz, model, all_records):
         return (tensor - 0) * (max_vals - min_vals) / (1 - 0) + min_vals
 
     def normalize_coord(coords):
-        coords_to_normalize = coords[:, :4]
-        coords_fixed = coords[:, 4:]
+        coords_to_normalize = coords[:, :3]
+        coords_fixed = coords[:, 3:]
         
         normalized_coords = (coords_to_normalize - min_coords) * (1 - (-1)) / (max_coords - min_coords) - 1
         return torch.cat((normalized_coords, coords_fixed), dim=1)
     
     coords = torch.tensor(xyz, dtype=torch.float32).to(device)
     coords = normalize_coord(coords)
+    
+    print(coords.head())
     
     output = model(coords)
     output = unnormalize_val(output[0])
@@ -62,7 +75,7 @@ def get_results(id, xyz, model, all_records=False, batch_size=4096):
     return np.array(results)
 
 def inference(id, matter, atlas, model_path, donor, all_records=False, order_val=None):
-    brain_inr = load_model(model_path).to(device)
+    brain_inr = load_model(model_path, all_records).to(device)
 
     nii_file = f'./data/atlas/{atlas}.nii.gz'
     image = nib.load(nii_file)
@@ -121,7 +134,7 @@ matter = "246" # "grey"
 donor = "9861"
 # atlas = f"MNI152_T1_1mm_brain_{matter}_mask_int"
 atlas = 'BN_Atlas_246_1mm'
-all_records = False
+all_records = True
 df = pd.read_csv(f"./data/abagendata/train/se_{donor}.csv")
 os.makedirs(f'./nii_{donor}', exist_ok=True)
 
@@ -129,7 +142,7 @@ for i, row in tqdm(df.iterrows(), total=df.shape[0]):
     id = row['gene_symbol']
     order_val = row['se']
     if all_records:
-        model_path = f'./models_test/model_se_0.0002_512_5.pth'
+        model_path = f'./models_test/model_0.0001_21x512x12_7.37e-13.pth'
     else:
         model_path = f'./models_test/se_{id}.pth'
     inference(id, matter, atlas, model_path, donor, all_records, order_val)
