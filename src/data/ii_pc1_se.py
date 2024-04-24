@@ -3,6 +3,7 @@ import numpy as np
 
 from sklearn.decomposition import PCA
 from sklearn.manifold import SpectralEmbedding
+from sklearn.preprocessing import StandardScaler, MinMaxScaler
 
 
 def get_pc1_se_results(donor):
@@ -50,6 +51,8 @@ def get_pc1_se_results(donor):
     gene_df_embedding["se"] = gene_embedding[:, 0].flatten()
     gene_df_embedding = gene_df_embedding.sort_values(by="se", ascending=True)
     # gene_df_embedding = gene_df_embedding[['embedding']]
+    scaler = MinMaxScaler()
+    gene_df_embedding['se'] = scaler.fit_transform(gene_df_embedding[['se']])
     gene_df_embedding.to_csv(f"./data/abagendata/train/se_{donor}.csv")
 
 get_pc1_se_results("9861")

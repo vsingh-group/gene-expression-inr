@@ -10,8 +10,7 @@ from tqdm import tqdm
 
 from modules import *
 
-device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
-# min_max_dict_df_path = "./models_test/max_min_values.csv"
+device = torch.device("cuda:4" if torch.cuda.is_available() else "cpu")
 min_max_dict_df_path = "./models_test/max_min_values_se_sep.csv"
 
 def load_model(model_path, all_records=False):
@@ -46,8 +45,8 @@ def get_result(id, xyz, model, all_records):
     min_coords = torch.tensor(min_max_dict['min_coords'])
     max_coords = torch.tensor(min_max_dict['max_coords'])
     
-    def unnormalize_val(tensor):
-        return (tensor - 0) * (max_vals - min_vals) / (1 - 0) + min_vals
+    # def unnormalize_val(tensor):
+    #     return (tensor - 0) * (max_vals - min_vals) / (1 - 0) + min_vals
 
     def normalize_coord(coords):
         coords_to_normalize = coords[:, :3]
@@ -59,14 +58,13 @@ def get_result(id, xyz, model, all_records):
     coords = torch.tensor(xyz, dtype=torch.float32).to(device)
     coords = normalize_coord(coords)
     
-    print(coords.head())
-    
+    # print first 5 rows of coords tensor
     output = model(coords)
-    output = unnormalize_val(output[0])
+    # output = unnormalize_val(output[0])
     
-    return output[:,0].cpu().detach().numpy()
+    return output[0][:,0].cpu().detach().numpy()
 
-def get_results(id, xyz, model, all_records=False, batch_size=4096):
+def get_results(id, xyz, model, all_records=False, batch_size=2**19):
     results = []
     for i in range(0, len(xyz), batch_size):
         batch_xyz = xyz[i:i+batch_size]
@@ -101,12 +99,22 @@ def inference(id, matter, atlas, model_path, donor, all_records=False, order_val
     else:
         print("Error in Brain Matter selection")
         exit(0)
+        
+    # turn xyz to dataframe
+    meta_df = pd.DataFrame(mni_coords, columns=['mni_x', 'mni_y', 'mni_z'])
+    # add new column for classification and order val
+    meta_df['classification'] = classification_val
+    meta_df['se'] = order_val
+    
+      
+    # add positional encoding
+    if all_records:
+        encoding_dim = 8
+        meta_df = encode_df(meta_df, multires=encoding_dim)
 
-    mni_coords = [np.append(coord, classification_val) for coord in mni_coords]
-
-    # add oder val
-    if order_val:
-        mni_coords = [np.append(coord, order_val) for coord in mni_coords]
+    print(meta_df.head())
+    # turn meta_df to numpy array
+    mni_coords = meta_df.to_numpy()
 
     print(f"Generating Results for gene {id}...")      
     # chooose xyz list

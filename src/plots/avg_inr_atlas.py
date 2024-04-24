@@ -32,12 +32,12 @@ def avg_atlas(gene_atlas_path, donor):
         gene_values = [gene_data[tuple(coord)] for coord in coords]    
         avg_gene_expression = np.mean(gene_values)
         
-        # new_gene_data[tuple(zip(*coords))] = avg_gene_expression
+        new_gene_data[tuple(zip(*coords))] = avg_gene_expression
         avg_map[int(label)] = avg_gene_expression
     
-    # new_img = nib.Nifti1Image(new_gene_data, atlas_with_genes.affine)
-    # nib.save(new_img, output_path)
-    
+    new_img = nib.Nifti1Image(new_gene_data, atlas_with_genes.affine)
+    nib.save(new_img, output_path)
+    print(f"Interpolated {output_path} Success!")
     return avg_map
 
 with open("./data/gene_names.csv") as f:
@@ -49,6 +49,7 @@ gene_names.sort()
 
 matter = "246"
 donor = "9861"
+full_records = False
 df = pd.read_csv(f"./data/abagendata/train/se_{donor}.csv")
 os.makedirs(f"./nii_{donor}", exist_ok=True)
 genes_data = {}
@@ -56,15 +57,22 @@ genes_data = {}
 for i, row in tqdm(df.iterrows(), total=df.shape[0]):
     id = row['gene_symbol']
     path = f"{id}_{matter}_inr"
+    
+    if full_records:
+        path = f"{id}_{matter}_inrs"
+        
     avg_map = avg_atlas(path, donor)
     genes_data[id] = avg_map
 
 df = pd.DataFrame(genes_data)
 df.index.name = 'label'
 df = df.sort_index(axis=1)
-df.to_csv(f'./data/result_246_{donor}_inravg.csv')
+if full_records:
+    df.to_csv(f'./data/result_246_{donor}_inrs_avg.csv')
+else:
+    df.to_csv(f'./data/result_246_{donor}_inr_avg.csv')
 
-df_abagen = pd.read_csv(f"./data/abagendata/abagen_output/246_interpolate_microarray_{donor}.csv", index_col='label')
-gene_names.remove('NEAT')
-df_abagen = df_abagen[gene_names]
-df_abagen.to_csv(f'./data/result_246_{donor}_abagen.csv')
+# df_abagen = pd.read_csv(f"./data/abagendata/abagen_output/246_interpolate_microarray_{donor}.csv", index_col='label')
+# gene_names.remove('NEAT')
+# df_abagen = df_abagen[gene_names]
+# df_abagen.to_csv(f'./data/result_246_{donor}_abagen.csv')

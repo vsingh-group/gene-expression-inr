@@ -24,3 +24,4 @@ dependencies:
     - wandb
     - configargparse
     - nibabel
+    - ipyniivue

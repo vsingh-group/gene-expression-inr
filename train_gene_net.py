@@ -11,18 +11,6 @@ from torch.utils.data import Dataset, DataLoader
 
 from modules import *
 
-def encode_df(df, multires):
-    scaler = MinMaxScaler()
-    df['se'] = scaler.fit_transform(df[['se']])
-    # position embedding
-    embed, _ = get_embedder(multires=multires)
-    embedded_data = embed(df[["se"]])
-    # add embedded_data to gene_df as new columns
-    for i in range(embedded_data.shape[1]):
-        p_f = 'sin' if i % 2 == 0 else 'cos'
-        df[f"se_{p_f}{i}"] = embedded_data[:, i]
-    
-    return df
 
 def get_train_data(donor, order="pc1", encoding_dim=4):
     if order != "pc1" and order != "se":

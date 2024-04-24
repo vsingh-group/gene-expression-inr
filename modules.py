@@ -5,8 +5,6 @@ from torch import nn
 import numpy as np
 import pandas as pd
 
-from sklearn.preprocessing import StandardScaler, MinMaxScaler
-
 
 def vox2mni(voxel_coord, affine):
     voxel_homogeneous = np.array([*voxel_coord, 1])  # Convert to homogeneous coordinates
@@ -68,6 +66,17 @@ def get_embedder(multires, i=0):
     def embed(x, eo=embedder_obj): 
         return eo.embed(x)
     return embed, embedder_obj.out_dim
+
+def encode_df(df, multires):
+    # position embedding
+    embed, _ = get_embedder(multires=multires)
+    embedded_data = embed(df[["se"]])
+    # add embedded_data to gene_df as new columns
+    for i in range(embedded_data.shape[1]):
+        p_f = 'sin' if i % 2 == 0 else 'cos'
+        df[f"se_{p_f}{i}"] = embedded_data[:, i]
+    
+    return df
 
 class SineLayer(nn.Module):
     def __init__(self, in_features, out_features, bias=True,
