@@ -4,14 +4,14 @@ from tqdm import tqdm
 import pandas as pd
 import os
 
-def avg_atlas(gene_atlas_path, donor):
-    input_path = f'./nii_{donor}/{gene_atlas_path}.nii.gz'
-    output_path = f'./nii_{donor}/{gene_atlas_path}_avg.nii.gz'
+def avg_atlas(gene_atlas_path, atlas, donor, matter):
+    input_path = f'./nii_{donor}_{matter}/{gene_atlas_path}.nii.gz'
+    output_path = f'./nii_{donor}_{matter}/{gene_atlas_path}_avg.nii.gz'
     # if os.path.exists(output_path):
     #     return
     # if not os.path.exists(input_path):
     #     return
-    atlas_with_labels = nib.load('./data/atlas/BN_Atlas_246_1mm.nii.gz')
+    atlas_with_labels = nib.load(f'./data/atlas/{atlas}.nii.gz')
     atlas_with_genes = nib.load(input_path)
 
     # Get data from images
@@ -47,11 +47,13 @@ with open("./data/gene_names.csv") as f:
 gene_names = list(set(gene_names))
 gene_names.sort()
 
-matter = "246"
+matter = "83" # "246"
 donor = "9861"
-full_records = False
-df = pd.read_csv(f"./data/abagendata/train/se_{donor}.csv")
-os.makedirs(f"./nii_{donor}", exist_ok=True)
+# atlas = "BN_Atlas_246_1mm"
+atlas = "atlas-desikankilliany"
+full_records = True
+df = pd.read_csv(f"./data/abagendata/train_{matter}/se_{donor}.csv")
+os.makedirs(f"./nii_{donor}_{matter}", exist_ok=True)
 genes_data = {}
 
 for i, row in tqdm(df.iterrows(), total=df.shape[0]):
@@ -61,18 +63,18 @@ for i, row in tqdm(df.iterrows(), total=df.shape[0]):
     if full_records:
         path = f"{id}_{matter}_inrs"
         
-    avg_map = avg_atlas(path, donor)
+    avg_map = avg_atlas(path, atlas, donor, matter)
     genes_data[id] = avg_map
 
 df = pd.DataFrame(genes_data)
 df.index.name = 'label'
 df = df.sort_index(axis=1)
 if full_records:
-    df.to_csv(f'./data/result_246_{donor}_inrs_avg.csv')
+    df.to_csv(f'./data/result_{matter}_{donor}_inrs_avg.csv')
 else:
-    df.to_csv(f'./data/result_246_{donor}_inr_avg.csv')
+    df.to_csv(f'./data/result_{matter}_{donor}_inr_avg.csv')
 
-# df_abagen = pd.read_csv(f"./data/abagendata/abagen_output/246_interpolate_microarray_{donor}.csv", index_col='label')
-# gene_names.remove('NEAT')
-# df_abagen = df_abagen[gene_names]
-# df_abagen.to_csv(f'./data/result_246_{donor}_abagen.csv')
+df_abagen = pd.read_csv(f"./data/abagendata/abagen_output/{matter}_interpolate_microarray_{donor}.csv", index_col='label')
+gene_names.remove('NEAT')
+df_abagen = df_abagen[gene_names]
+df_abagen.to_csv(f'./data/result_{matter}_{donor}_abagen.csv')

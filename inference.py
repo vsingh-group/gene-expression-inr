@@ -10,7 +10,7 @@ from tqdm import tqdm
 
 from modules import *
 
-device = torch.device("cuda:4" if torch.cuda.is_available() else "cpu")
+device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
 min_max_dict_df_path = "./models_test/max_min_values_se_sep.csv"
 
 def load_model(model_path, all_records=False):
@@ -64,7 +64,7 @@ def get_result(id, xyz, model, all_records):
     
     return output[0][:,0].cpu().detach().numpy()
 
-def get_results(id, xyz, model, all_records=False, batch_size=2**19):
+def get_results(id, xyz, model, all_records=False, batch_size=2**18):
     results = []
     for i in range(0, len(xyz), batch_size):
         batch_xyz = xyz[i:i+batch_size]
@@ -81,7 +81,8 @@ def inference(id, matter, atlas, model_path, donor, all_records=False, order_val
     affine = image.affine
     # print(image.header)
 
-    x_dim, y_dim, z_dim = 182, 218, 182  # dimensions from the nii file header
+    # get dimension of the nii file
+    x_dim, y_dim, z_dim = data.shape
 
     xyz = []
     mni_coords = []
@@ -94,7 +95,7 @@ def inference(id, matter, atlas, model_path, donor, all_records=False, order_val
 
     if matter == "white":
         classification_val = 1  # 1 for white
-    elif matter == "grey" or matter == "246":
+    elif matter == "grey" or matter in ["246", "83"]:
         classification_val = -1  # -1 for grey
     else:
         print("Error in Brain Matter selection")
@@ -130,27 +131,29 @@ def inference(id, matter, atlas, model_path, donor, all_records=False, order_val
     new_img = nib.Nifti1Image(plot_data, affine=image.affine)
     
     if all_records:
-        save_path = f'./nii_{donor}/{id}_{matter}_inrs.nii.gz'
+        save_path = f'./nii_{donor}_{matter}/{id}_{matter}_inrs.nii.gz'
     else:
-        save_path = f'./nii_{donor}/{id}_{matter}_inr.nii.gz'
+        save_path = f'./nii_{donor}_{matter}/{id}_{matter}_inr.nii.gz'
     nib.save(new_img, save_path)
     print("Interpolate Success!")
 
 
 # id = "1058685"
-matter = "246" # "grey"
+matter = "83" # "grey" / "246" / "83"
 donor = "9861"
 # atlas = f"MNI152_T1_1mm_brain_{matter}_mask_int"
-atlas = 'BN_Atlas_246_1mm'
+# atlas = 'BN_Atlas_246_1mm'
+atlas = 'atlas-desikankilliany'
 all_records = True
-df = pd.read_csv(f"./data/abagendata/train/se_{donor}.csv")
-os.makedirs(f'./nii_{donor}', exist_ok=True)
+df = pd.read_csv(f"./data/abagendata/train_{matter}/se_{donor}.csv")
+os.makedirs(f'./nii_{donor}_{matter}', exist_ok=True)
 
 for i, row in tqdm(df.iterrows(), total=df.shape[0]):
     id = row['gene_symbol']
     order_val = row['se']
     if all_records:
-        model_path = f'./models_test/model_0.0001_21x512x12_7.37e-13.pth'
+        # model_path = f'./models_test/model_{matter}_0.0001_21x512x12_7.37e-13.pth'
+        model_path = f'./models_test/model_83_0.0001_21x512x12_1.55e-11.pth'
     else:
         model_path = f'./models_test/se_{id}.pth'
     inference(id, matter, atlas, model_path, donor, all_records, order_val)

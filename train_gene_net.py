@@ -12,11 +12,11 @@ from torch.utils.data import Dataset, DataLoader
 from modules import *
 
 
-def get_train_data(donor, order="pc1", encoding_dim=4):
+def get_train_data(donor, matter, order="pc1", encoding_dim=4):
     if order != "pc1" and order != "se":
         print("Error in choosing gene order")
         exit(1)
-    filepath=f'./data/abagendata/train/{order}_{donor}_merged.csv'
+    filepath=f'./data/abagendata/train_{matter}/{order}_{donor}_merged.csv'
     meta_df = pd.read_csv(filepath)
     vals = torch.tensor(meta_df[['value']].values, dtype=torch.float32)
     meta_df = meta_df.drop(['gene_symbol', 'well_id', 'value'], axis=1)
@@ -27,9 +27,9 @@ def get_train_data(donor, order="pc1", encoding_dim=4):
 
 
 class BrainFitting(Dataset):
-    def __init__(self, donor, gene_order, encoding_dim=4, normalize=True):
+    def __init__(self, donor, matter, gene_order, encoding_dim=4, normalize=True):
         super().__init__()
-        self.coords, self.vals = get_train_data(donor, gene_order, encoding_dim) # se or pc1
+        self.coords, self.vals = get_train_data(donor, matter, gene_order, encoding_dim) # se or pc1
         
         # Assuming the first 3 columns are mni_x, mni_y, mni_z
         self.coords_to_normalize = self.coords[:, :3]  
@@ -73,7 +73,7 @@ logging.basicConfig(filename='./brain_fitting.log', level=logging.INFO,
 def train(config, donor):
     try:
         gene_order = config.gene_order
-        brain = BrainFitting(donor, gene_order, config.encoding_dim)
+        brain = BrainFitting(donor, config.matter, gene_order, config.encoding_dim)
 
         dataloader = DataLoader(brain, batch_size=1, pin_memory=True, num_workers=0)
         brain_siren = Siren(in_features=5+config.encoding_dim*2,
@@ -87,7 +87,8 @@ def train(config, donor):
         steps_til_summary = 50
 
         optim = torch.optim.Adam(lr=config.lr, params=brain_siren.parameters())
-
+        scheduler = torch.optim.lr_scheduler.StepLR(optim, step_size=400, gamma=0.9)
+        
         model_input, ground_truth = next(iter(dataloader))
         model_input, ground_truth = model_input.cuda(), ground_truth.cuda()
 
@@ -100,7 +101,7 @@ def train(config, donor):
             
             if loss < prev_loss:
                 model_path_prefix = (
-                    f"./models_test/model_{config.lr}_"
+                    f"./models_test/model_{config.matter}_{config.lr}_"
                     f"{5 + 2 * config.encoding_dim}x"
                     f"{config.hidden_features}x"
                     f"{config.hidden_layers}_"
@@ -128,6 +129,7 @@ def train(config, donor):
             # accelerator.backward(loss)
             loss.backward()
             optim.step()
+            scheduler.step()
 
         
         min_max_dict = {
@@ -154,12 +156,14 @@ def main_sweep():
     train(wandb.config, donor="9861", gene_order=gene_order)
     
 def main():
+    # matter: 83 or 246 depends on different atlas
     wandb.init(project="brain_fitting0417", entity="yuxizheng", config={
+        "matter": "83",
         "gene_order": "se",
         "lr": 1e-4,
         "hidden_layers": 12,
         "hidden_features": 512,
-        "total_steps": 50,
+        "total_steps": 5000,
         "encoding_dim": 8,
     })
     

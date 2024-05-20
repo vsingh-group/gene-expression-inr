@@ -34,16 +34,18 @@ def map_abagen_to_nii(id, atlas, matter, donor):
                 atlas_data[tuple(coord)] = value
 
     new_img = nib.Nifti1Image(atlas_data, affine=affine)
-    nib.save(new_img, f'./nii_{donor}/{id}_{matter}_abagen.nii.gz')
+    nib.save(new_img, f'./nii_{donor}_{matter}/{id}_{matter}_abagen.nii.gz')
 
 matter = "grey" # "grey"
 donor = "9861"
 # atlas = f"MNI152_T1_1mm_brain_{matter}_mask_int"
-atlas = "BN_Atlas_246_1mm"
-matter = "246"
-df = pd.read_csv(f"./data/abagendata/train/se_{donor}.csv")
+# atlas = "BN_Atlas_246_1mm"
+atlas = 'atlas-desikankilliany'
 
-os.makedirs(f'./nii_{donor}', exist_ok=True)
+matter = "83" # 246
+df = pd.read_csv(f"./data/abagendata/train_{matter}/se_{donor}.csv")
+
+os.makedirs(f'./nii_{donor}_{matter}', exist_ok=True)
 
 for i, row in tqdm(df.iterrows(), total=df.shape[0]):
     id = row['gene_symbol']

@@ -1,10 +1,9 @@
 .DS_Store
 **/__pycache__
-MicroarrayExpression.csv
 *.csv
 *.pth
 *.log
 wandb/
-nii_inr_sep/
-nii_abagen/
-nii_9861/
+nii_9861_246/
+nii_9861_83/
+results/imgs_inrs_avg/
