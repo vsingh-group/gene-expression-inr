@@ -48,7 +48,7 @@ gene_names = list(set(gene_names))
 gene_names.sort()
 
 matter = "83" # "246"
-donor = "9861"
+donor = "14380"
 # atlas = "BN_Atlas_246_1mm"
 atlas = "atlas-desikankilliany"
 full_records = True
