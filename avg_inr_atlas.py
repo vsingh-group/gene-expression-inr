@@ -37,7 +37,7 @@ def avg_atlas(gene_atlas_path, atlas, donor, matter):
     
     new_img = nib.Nifti1Image(new_gene_data, atlas_with_genes.affine)
     nib.save(new_img, output_path)
-    print(f"Interpolated {output_path} Success!")
+    # print(f"Interpolated {output_path} Success!")
     return avg_map
 
 with open("./data/gene_names.csv") as f:
@@ -47,8 +47,8 @@ with open("./data/gene_names.csv") as f:
 gene_names = list(set(gene_names))
 gene_names.sort()
 
-matter = "83" # "246"
-donor = "14380"
+matter = "83_new" # "246"
+donor = "10021"
 # atlas = "BN_Atlas_246_1mm"
 atlas = "atlas-desikankilliany"
 full_records = True
@@ -74,7 +74,7 @@ if full_records:
 else:
     df.to_csv(f'./data/result_{matter}_{donor}_inr_avg.csv')
 
-df_abagen = pd.read_csv(f"./data/abagendata/abagen_output/{matter}_interpolate_microarray_{donor}.csv", index_col='label')
-gene_names.remove('NEAT')
-df_abagen = df_abagen[gene_names]
-df_abagen.to_csv(f'./data/result_{matter}_{donor}_abagen.csv')
+# df_abagen = pd.read_csv(f"./data/abagendata/abagen_output/{matter}_interpolate_microarray_{donor}.csv", index_col='label')
+# gene_names.remove('NEAT')
+# df_abagen = df_abagen[gene_names]
+# df_abagen.to_csv(f'./data/result_{matter}_{donor}_abagen.csv')

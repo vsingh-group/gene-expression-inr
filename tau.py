@@ -2,16 +2,20 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+donor_list = ['9861', '10021', '12876', '14380', '15496', '15697']
+donor_list = ['9861', '10021']
+
 raw_tau = pd.read_csv('./ADNI_tau.csv')
 region_meta = pd.read_csv('./atlas-desikankilliany-meta.csv')
 
-result_abagen = pd.read_csv('./data/83_interpolation_abagen.csv', index_col=0)
 dfs = []
-for donor in ['9861', '10021', '12876', '14380', '15496', '15697']:
-    dfs.append(pd.read_csv(f'./data/result_83_{donor}_inrs_avg.csv', index_col=0))
+for donor in donor_list:
+    dfs.append(pd.read_csv(f'./data/result_83_new_{donor}_inrs_avg.csv', index_col=0))
 # take average of all donors
 result_inr = pd.concat(dfs).groupby(level=0).mean()
-result_inr.to_csv('./data/83_interpolation_inrs.csv')
+result_inr.to_csv('./data/83_new_interpolation_inrs.csv')
+
+result_abagen = pd.read_csv('./data/83_new_interpolation_abagen.csv')
 result_abagen = result_abagen[result_inr.columns.to_list()]
 # take only columns that are in both datasets
 

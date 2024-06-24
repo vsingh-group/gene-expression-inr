@@ -145,7 +145,7 @@ def train(config):
             
             if loss < prev_loss:
                 model_path_prefix = (
-                    f"./models_test/{config.nonlin}_{config.matter}_{config.donor}_{config.lr}_"
+                    f"./models_new/{config.nonlin}_{config.matter}_{config.donor}_{config.lr}_"
                     f"{5 + 2 * config.encoding_dim}x"
                     f"{config.hidden_features}x"
                     f"{config.hidden_layers}_"
@@ -198,7 +198,7 @@ def train(config):
             'max_coords': brain.max_coords.numpy().item()
         }
             
-        with open(f'./models_test/max_min_values_{config.gene_order}_sep.csv', 'a') as file:
+        with open(f'./models_new/max_min_values_{config.gene_order}_sep.csv', 'a') as file:
             writer = csv.writer(file)
             row = [str(value) for value in min_max_dict.values()]
             writer.writerow(row)
@@ -213,17 +213,17 @@ def train(config):
     
 def main():
     # matter: 83 or 246 depends on different atlas
-    wandb.init(project="brain_fitting526", entity="yuxizheng", config={
+    wandb.init(project="brain_111", entity="yuxizheng", config={
         "nonlin": 'siren', # 'wire' 'gauss' 'mfn' 'relu' 'siren' 'wire2d'
-        "matter": "83",
+        "matter": "83_new",
         "gene_order": "se",
         "lr": 1e-4,
         "hidden_layers": 12,
         "hidden_features": 512,
         "total_steps": 10000,
         "encoding_dim": 11,
-        "donor": "14380",
-        "device": 'cuda:3',
+        "donor": "10021",
+        "device": 'cuda:0',
     })
     
     train(wandb.config)
@@ -240,24 +240,24 @@ def main_sweep():
         train(wandb.config)
 
 if __name__ == "__main__":
-    sweep_configuration = {
-        "method": "grid", # bayes
-        "metric": {"goal": "minimize", "name": "loss"},
-        "parameters": {
-            "nonlin": {"values": ['siren', 'wire', 'gauss', 'relu']},
-            "matter": {"values": ['83']},
-            "gene_order": {"values": ['se']},
-            "lr": {"values": [1e-3, 3e-3, 5e-3, 1e-4,]},
-            "hidden_layers": {"values": [12]},
-            "hidden_features": {"values": [512]},
-            "total_steps": {"values": [10000]},
-            "encoding_dim": {"values": [11]},
-            # "donor": {"values": ['9861']},
-            "donor": {"values": ['9861', '10021', '12876', '14380', '15496', '15697']},
-            "device": {"values": ['cuda:3']},
-        },
-    }
+    # sweep_configuration = {
+    #     "method": "grid", # bayes
+    #     "metric": {"goal": "minimize", "name": "loss"},
+    #     "parameters": {
+    #         "nonlin": {"values": ['siren', 'wire', 'gauss', 'relu']},
+    #         "matter": {"values": ['83']},
+    #         "gene_order": {"values": ['se']},
+    #         "lr": {"values": [1e-3, 3e-3, 5e-3, 1e-4,]},
+    #         "hidden_layers": {"values": [12]},
+    #         "hidden_features": {"values": [512]},
+    #         "total_steps": {"values": [10000]},
+    #         "encoding_dim": {"values": [11]},
+    #         # "donor": {"values": ['9861']},
+    #         "donor": {"values": ['9861', '10021', '12876', '14380', '15496', '15697']},
+    #         "device": {"values": ['cuda:3']},
+    #     },
+    # }
 
-    sweep_id = wandb.sweep(sweep=sweep_configuration, project="brain_sweep")
-    wandb.agent(sweep_id, function=main_sweep)
-    # main()
+    # sweep_id = wandb.sweep(sweep=sweep_configuration, project="brain_sweep")
+    # wandb.agent(sweep_id, function=main_sweep)
+    main()
