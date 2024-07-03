@@ -5,8 +5,14 @@ import seaborn as sns
 raw_tau = pd.read_csv('./ADNI_tau.csv')
 region_meta = pd.read_csv('./atlas-desikankilliany1.csv')
 
-result_abagen = pd.read_csv('./result_83_9861_abagen.csv', index_col=0)
 result_inr = pd.read_csv('./result_83_9861_inrs_avg.csv', index_col=0)
+
+result_abagen1 = pd.read_csv('outputs/abagen_sneha_output.csv')
+result_abagen = pd.read_csv('./data/DK_Atlas_86_abagen_mapped_gene_exp_RcLcRsLs.csv')
+# take same columns as result_inr from result_abagen
+result_abagen = result_abagen[result_inr.columns]
+result_abagen1 = result_abagen1[result_inr.columns]
+result_inr = result_abagen1
 
 # take only AD in raw_tau
 raw_tau = raw_tau[raw_tau['merge_DX'].isin(['Dementia', 'MCI'])]
@@ -56,7 +62,7 @@ correlation_inr = get_corr(result_inr)
 
 def plot_combined_correlation(df1, df2, title, filename):
     # Merge the two DataFrames on 'Gene'
-    combined_df = pd.merge(df1, df2, on='Gene', suffixes=('_abagen', '_inr'))
+    combined_df = pd.merge(df1, df2, on='Gene', suffixes=('_abagen_sneha', '_abagen_new_with_sneha_options'))
     
     # Melt the DataFrame to long format for seaborn plotting
     combined_df_long = combined_df.melt(id_vars='Gene', var_name='Dataset', value_name='Correlation')
