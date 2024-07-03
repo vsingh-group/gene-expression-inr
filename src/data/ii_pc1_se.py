@@ -13,7 +13,7 @@ def get_pc1_se_results(donor, matter="83"):
         
     gene_names = set(gene_names)
 
-    microarray_df = pd.read_csv(f"./data/abagendata/train_{matter}/{matter}_microarray_{donor}.csv")
+    microarray_df = pd.read_csv(f"./data/abagendata/train_{matter}_new/{matter}_microarray_{donor}.csv")
     microarray_df = microarray_df.iloc[:, 1:].T
     microarray_df.columns = microarray_df.iloc[0].astype(int).astype(str)
     microarray_df = microarray_df.iloc[1:]
@@ -40,7 +40,7 @@ def get_pc1_se_results(donor, matter="83"):
     gene_df_pca = gene_df_pca.sort_values(by="pc1", ascending=True)
     # gene_df_pca = gene_df_pca[['pc1']]
     # save gene_df to a new csv file
-    gene_df_pca.to_csv(f"./data/abagendata/train_{matter}/pc1_{donor}.csv")
+    gene_df_pca.to_csv(f"./data/abagendata/train_{matter}_new/pc1_{donor}.csv")
 
 
     # Spectrum Embedding
@@ -53,14 +53,14 @@ def get_pc1_se_results(donor, matter="83"):
     # gene_df_embedding = gene_df_embedding[['embedding']]
     scaler = MinMaxScaler()
     gene_df_embedding['se'] = scaler.fit_transform(gene_df_embedding[['se']])
-    gene_df_embedding.to_csv(f"./data/abagendata/train_{matter}/se_{donor}.csv")
+    gene_df_embedding.to_csv(f"./data/abagendata/train_{matter}_new/se_{donor}.csv")
     
 
 get_pc1_se_results("9861")
 get_pc1_se_results("10021")
-get_pc1_se_results("12876")
-get_pc1_se_results("14380")
-get_pc1_se_results("15496")
-get_pc1_se_results("15697")
+# get_pc1_se_results("12876")
+# get_pc1_se_results("14380")
+# get_pc1_se_results("15496")
+# get_pc1_se_results("15697")
 
 # exec(open('./src/data/pc1_se.py').read())

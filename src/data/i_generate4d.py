@@ -42,9 +42,9 @@ def generate4d(filename):
     meta_df.to_csv(f"{filename}_4d.csv", index=False)
 
 matter = "83"
-generate4d(f"./data/abagendata/train_{matter}/{matter}_annotation_9861")
-generate4d(f"./data/abagendata/train_{matter}/{matter}_annotation_10021")
-generate4d(f"./data/abagendata/train_{matter}/{matter}_annotation_12876")
-generate4d(f"./data/abagendata/train_{matter}/{matter}_annotation_14380")
-generate4d(f"./data/abagendata/train_{matter}/{matter}_annotation_15496")
-generate4d(f"./data/abagendata/train_{matter}/{matter}_annotation_15697")
+generate4d(f"./data/abagendata/train_{matter}_new/{matter}_annotation_9861")
+generate4d(f"./data/abagendata/train_{matter}_new/{matter}_annotation_10021")
+# generate4d(f"./data/abagendata/train_{matter}/{matter}_annotation_12876")
+# generate4d(f"./data/abagendata/train_{matter}/{matter}_annotation_14380")
+# generate4d(f"./data/abagendata/train_{matter}/{matter}_annotation_15496")
+# generate4d(f"./data/abagendata/train_{matter}/{matter}_annotation_15697")

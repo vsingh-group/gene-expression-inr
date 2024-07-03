@@ -8,14 +8,14 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
 from tqdm import tqdm
 
-from modules import *
+from modules.my_modules import *
 
-device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
+device = torch.device("cuda:2" if torch.cuda.is_available() else "cpu")
 min_max_dict_df_path = "./models_test/max_min_values_se_sep.csv"
 
 def load_model(model_path, all_records=False):
     if all_records:
-        model = Siren(in_features=21,
+        model = Siren(in_features=27,
                       out_features=1,
                       hidden_features=512,
                       hidden_layers=12,
@@ -95,7 +95,7 @@ def inference(id, matter, atlas, model_path, donor, all_records=False, order_val
 
     if matter == "white":
         classification_val = 1  # 1 for white
-    elif matter == "grey" or matter in ["246", "83"]:
+    elif matter == "grey" or matter in ["246", "83", "83_new"]:
         classification_val = -1  # -1 for grey
     else:
         print("Error in Brain Matter selection")
@@ -110,7 +110,7 @@ def inference(id, matter, atlas, model_path, donor, all_records=False, order_val
       
     # add positional encoding
     if all_records:
-        encoding_dim = 8
+        encoding_dim = 11
         meta_df = encode_df(meta_df, multires=encoding_dim)
 
     print(meta_df.head())
@@ -139,8 +139,8 @@ def inference(id, matter, atlas, model_path, donor, all_records=False, order_val
 
 
 # id = "1058685"
-matter = "83" # "grey" / "246" / "83"
-donor = "9861"
+matter = "83_new" # "grey" / "246" / "83"
+donor = "10021"
 # atlas = f"MNI152_T1_1mm_brain_{matter}_mask_int"
 # atlas = 'BN_Atlas_246_1mm'
 atlas = 'atlas-desikankilliany'
@@ -153,7 +153,7 @@ for i, row in tqdm(df.iterrows(), total=df.shape[0]):
     order_val = row['se']
     if all_records:
         # model_path = f'./models_test/model_{matter}_0.0001_21x512x12_7.37e-13.pth'
-        model_path = f'./models_test/model_83_0.0001_21x512x12_1.55e-11.pth'
+        model_path = f'./models_new/siren_83_new_10021_0.0001_27x512x12_7.27e-07.pth'
     else:
         model_path = f'./models_test/se_{id}.pth'
     inference(id, matter, atlas, model_path, donor, all_records, order_val)
