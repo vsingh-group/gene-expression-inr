@@ -1,25 +1,26 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 
-donors = ['9861', '10021', '12876', '14380', '15496', '15697']
-matter = "83"
-atlas = 'BN_Atlas_246_1mm' if matter == "246" else 'atlas-desikankilliany'
+donors = ['9861', '10021']
+matter = "83_new"
+atlas = 'atlas-desikankilliany'
 all_results = True
 
 # Create a figure and a set of subplots
-fig, axes = plt.subplots(nrows=3, ncols=2, figsize=(20, 16))
+fig, axes = plt.subplots(nrows=1, ncols=1, figsize=(8, 10))
 axes = axes.flatten()
 
 for i, donor in enumerate(donors):
-    df_abagen = pd.read_csv(f"./data/result_{matter}_{donor}_abagen.csv", index_col='label')
-    if all_results:
-        df_inravg = pd.read_csv(f"./data/result_{matter}_{donor}_inrs_avg.csv", index_col='label')
-    else:
-        df_inravg = pd.read_csv(f"./data/result_{matter}_{donor}_inr_avg.csv", index_col='label')
+    df_abagen = pd.read_csv(f"./data/{matter}_interpolation_abagen.csv", index_col='label')
+    df_inravg = pd.read_csv(f"./data/{matter}_interpolation_inrsn.csv", index_col='label')
+    # df_inravg = pd.read_csv(f"./result_ibf_2full+mirror_TT/result_{matter}_{donor}_inrs_avg.csv", index_col='label')
 
     # Assuming these DataFrames are structured correctly
     df1 = df_abagen
     df2 = df_inravg
+    
+    print(df1.shape, df2.shape)
+    df1 = df1[df2.columns]
 
     correlation_df = pd.DataFrame(index=df1.columns, columns=['Correlation'])
     for gene in df1.columns:
@@ -48,6 +49,6 @@ for i, donor in enumerate(donors):
 plt.tight_layout()
 
 # Saving the plot to a PNG file
-plt.savefig(f'./results/{atlas}_corr_inr_all_donors_plot.png', format='png', dpi=300)
+plt.savefig(f'./results/corr_barplot.png', format='png', dpi=300)
 
 plt.show()

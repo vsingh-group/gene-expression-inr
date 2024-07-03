@@ -110,4 +110,22 @@ plt.tight_layout()  # Adjust layout to make room for rotated x-axis labels
 plt.grid(axis='y', linestyle='--', alpha=0.7)
 plt.grid(axis='x', linestyle='--', alpha=0.7)
 
-plt.savefig("tau_plot_1.png", bbox_inches='tight', dpi=300)
+plt.savefig("./results/tau_plot_1.png", bbox_inches='tight', dpi=300)
+
+# Plot the scatter plot
+plt.figure(figsize=(10, 6))
+sns.scatterplot(x='Correlation Abagen', y='Correlation INR', data=merged_correlations, s=100, color=palette[0])
+
+# Add labels and title
+plt.xlabel('Correlation with Tau (Abagen)')
+plt.ylabel('Correlation with Tau (INR)')
+plt.title('Scatterplot of Gene Correlations with Tau between Abagen and INR Methods')
+
+# Add a line y=x for reference
+plt.plot([-1, 1], [-1, 1], 'r--')
+
+plt.tight_layout()  # Adjust layout for better readability
+plt.grid(axis='both', linestyle='--', alpha=0.7)
+
+plt.savefig("./results/tau_scatterplot.png", bbox_inches='tight', dpi=300)
+plt.show()

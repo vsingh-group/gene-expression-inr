@@ -8,7 +8,7 @@ import nibabel as nib
 # id = "A1BG"
 
 def get_abagen_result(id, donor, matter):
-    df = pd.read_csv(f"./data/{matter}_interpolation_abagen.csv", index_col=0)
+    df = pd.read_csv(f"./data/{matter}_interpolation_inrs.csv", index_col=0)
     idx = df.columns.get_loc(id)
     columns = df.columns
     df_tensor = df.iloc[:, idx].values
@@ -34,7 +34,7 @@ def map_abagen_to_nii(id, atlas, matter, donor):
                 atlas_data[tuple(coord)] = value
 
     new_img = nib.Nifti1Image(atlas_data, affine=affine)
-    nib.save(new_img, f'./result_ibf_2full+mirror_TT/nii_abagen/{id}_{matter}_abagen.nii.gz')
+    nib.save(new_img, f'./result_ibf_2full+mirror_TT/nii_inrs/{id}_{matter}_inrs.nii.gz')
 
 matter = "grey" # "grey"
 donor = "9861"
@@ -45,7 +45,7 @@ atlas = 'atlas-desikankilliany'
 matter = "83_new" # 246
 df = pd.read_csv(f"./data/abagendata/train_{matter}/se_{donor}.csv")
 
-os.makedirs(f'./nii_{donor}_{matter}', exist_ok=True)
+# os.makedirs(f'./nii_{donor}_{matter}', exist_ok=True)
 
 for i, row in tqdm(df.iterrows(), total=df.shape[0]):
     id = row['gene_symbol']
