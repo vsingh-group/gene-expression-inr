@@ -2,11 +2,15 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-df = pd.read_csv("./data/se_merged.csv")
+donor = '10021'
+df = pd.read_csv(f"data/abagendata/train_83_new/se_{donor}_merged.csv")
 
 grouped_df = df.groupby(['gene_symbol', 'se']).agg(list).reset_index()
 grouped_df = grouped_df[['gene_symbol', 'value', 'se']]
 grouped_df = grouped_df.sort_values(by='se', ascending=True)
+
+print(grouped_df.head())
+print(grouped_df.shape)
 
 data_for_matrix = {}
 
@@ -22,14 +26,14 @@ def draw(covariance_matrix, name):
                 cmap='coolwarm', # Color map
                 linewidths=.5)   # Line widths between cells
 
-    plt.title(f'{name} Gene Matrix Heatmap')
+    plt.title(f'{name} Gene Matrix Heatmap, Donor {donor}')
 
     ax.xaxis.tick_top()
     ax.set_xticklabels(ax.get_xticklabels(), rotation=90)
     ax.xaxis.set_label_position('top')
 
-    plt.savefig(f'{name}_gene_matrix_heatmap.png', dpi=300, bbox_inches='tight')
+    plt.savefig(f'{name}_gene_heatmap_{donor}.png', dpi=300, bbox_inches='tight')
 
 draw(df_for_covariance.corr(), "Correlation")
-draw(df_for_covariance.cov(), "Covariance")
+# draw(df_for_covariance.cov(), "Covariance")
 

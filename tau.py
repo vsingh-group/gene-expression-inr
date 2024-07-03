@@ -8,12 +8,13 @@ donor_list = ['9861', '10021']
 raw_tau = pd.read_csv('./ADNI_tau.csv')
 region_meta = pd.read_csv('./atlas-desikankilliany-meta.csv')
 
-dfs = []
-for donor in donor_list:
-    dfs.append(pd.read_csv(f'./data/result_83_new_{donor}_inrs_avg.csv', index_col=0))
-# take average of all donors
-result_inr = pd.concat(dfs).groupby(level=0).mean()
-result_inr.to_csv('./data/83_new_interpolation_inrs.csv')
+# dfs = []
+# for donor in donor_list:
+#     dfs.append(pd.read_csv(f'./data/result_83_new_{donor}_inrs_avg.csv', index_col=0))
+# # take average of all donors
+# result_inr = pd.concat(dfs).groupby(level=0).mean()
+# result_inr.to_csv('./data/83_new_interpolation_inrs.csv')
+result_inr = pd.read_csv('./data/83_new_interpolation_inrs.csv', index_col=0)
 
 result_abagen = pd.read_csv('./data/83_new_interpolation_abagen.csv')
 result_abagen = result_abagen[result_inr.columns.to_list()]
@@ -103,5 +104,47 @@ def plot_combined_correlation(df1, df2, title, filename):
     
     # Close the plot to free up memory
     plt.close()
+    
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
 
-plot_combined_correlation(correlation_abagen, correlation_inr, 'Comparison of Gene-Tau Correlations', 'comparison_tau_correlation.png')
+def plot_combined_correlation_violin(df1, df2, title, filename):
+    # Merge the two DataFrames on 'Gene'
+    combined_df = pd.merge(df1, df2, on='Gene', suffixes=('_abagen', '_inr'))
+    
+    # Melt the DataFrame to long format for seaborn plotting
+    combined_df_long = combined_df.melt(id_vars='Gene', var_name='Dataset', value_name='Correlation')
+    
+    # Sort values for better visualization
+    combined_df_long.sort_values('Correlation', ascending=False, inplace=True)
+    
+    # Determine the number of unique genes for layout management
+    unique_genes = combined_df_long['Gene'].unique()
+    num_genes = len(unique_genes)
+    
+    # Set up the matplotlib figure
+    fig, axes = plt.subplots(nrows=(num_genes // 10) + 1, ncols=2, figsize=(16, min(num_genes * 0.5, 20)), constrained_layout=True)
+    axes = axes.flatten()
+
+    # Create a violin plot for each gene
+    for i, gene in enumerate(unique_genes):
+        ax = axes[i]
+        sns.violinplot(x='Correlation', y='Dataset', data=combined_df_long[combined_df_long['Gene'] == gene], split=True, inner="point", ax=ax)
+        ax.set_title(gene)
+        ax.set_xlabel('Correlation')
+        ax.set_ylabel('')
+        ax.yaxis.set_label_position('right')
+
+    # Add a main title
+    fig.suptitle(title, fontsize=16)
+    
+    # Save the plot
+    plt.savefig(filename, bbox_inches='tight')
+
+    # Close the plot to free up memory
+    plt.close()
+
+# Example usage:
+plot_combined_correlation_violin(correlation_abagen, correlation_inr, 'Comparison of Gene-Tau Correlations', 'comparison_tau_correlation_violin.png')
+# plot_combined_correlation(correlation_abagen, correlation_inr, 'Comparison of Gene-Tau Correlations', 'comparison_tau_correlation.png')
