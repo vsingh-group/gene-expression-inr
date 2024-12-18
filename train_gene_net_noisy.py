@@ -18,6 +18,41 @@ from sklearn.model_selection import train_test_split
 from modules import models
 from modules.my_modules import *
 
+def add_noise(ground_truth, noise_percentage=0.01):
+    """
+    Add random noise to 1% of the data points.
+    Args:
+        ground_truth: tensor of ground truth values
+        noise_percentage: percentage of points to add noise to (default: 0.01 for 1%)
+    Returns:
+        Tensor with noise added to random subset of points
+    """
+    device = ground_truth.device
+    noisy_truth = ground_truth.clone()
+    
+    # Get the actual shape and total number of elements
+    original_shape = ground_truth.shape
+    num_points = ground_truth.numel()  # Total number of elements
+    num_noisy_points = int(num_points * noise_percentage)
+    
+    # Flatten the tensor for easier indexing
+    noisy_truth_flat = noisy_truth.view(-1)
+    
+    # Randomly select points to add noise to
+    noisy_indices = torch.randperm(num_points, device=device)[:num_noisy_points]
+    
+    # Generate random noise (±10% of the data range)
+    data_range = torch.max(ground_truth) - torch.min(ground_truth)
+    noise = (torch.rand(num_noisy_points, device=device) - 0.5) * 0.2 * data_range
+    
+    # Add noise to selected points in flattened tensor
+    noisy_truth_flat[noisy_indices] += noise
+    
+    # Reshape back to original shape
+    noisy_truth = noisy_truth_flat.view(original_shape)
+    
+    return noisy_truth
+
 def get_train_data(donor, matter, order="pc1", encoding_dim=4):
     if order != "pc1" and order != "se":
         print("Error in choosing gene order")
@@ -33,7 +68,7 @@ def get_train_data(donor, matter, order="pc1", encoding_dim=4):
 
 
 class BrainFitting(Dataset):
-    def __init__(self, donor, matter, gene_order, encoding_dim=4, normalize=True, test=False):
+    def __init__(self, donor, matter, gene_order, encoding_dim=4, normalize=True, test=True):
         super().__init__()
         self.coords, self.vals = get_train_data(donor, matter, gene_order, encoding_dim) # se or pc1
         
@@ -94,8 +129,7 @@ logging.basicConfig(filename='./brain_fitting.log', level=logging.INFO,
 
 def train(config):
     try:
-        output_dir = "./sweep_nov13"
-        test = False
+        test = True
         brain = BrainFitting(config.donor,
                              config.matter,
                              config.gene_order, 
@@ -109,7 +143,6 @@ def train(config):
                                       pin_memory=True,
                                       num_workers=0)
         
-
         model = models.get_INR(
                 nonlin=config.nonlin,
                 in_features=5+config.encoding_dim*2,
@@ -120,69 +153,81 @@ def train(config):
                 pos_encode=False,
                 sidelength=config.hidden_features)
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        # device = torch.device(config.device if torch.cuda.is_available() else 'cpu')
         model.to(device)
 
         total_steps = config.total_steps
         steps_til_summary = 50
         
-        # optim = schedulefree.AdamWScheduleFree(model.parameters(), lr=config.lr)
         optim = torch.optim.Adam(lr=config.lr, params=model.parameters())
         scheduler = torch.optim.lr_scheduler.StepLR(optim, step_size=1000, gamma=0.9)
-        
+
         model_input, ground_truth = next(iter(train_dataloader))
-        print(model_input.shape, ground_truth.shape)
-        exit()
         model_input, ground_truth = model_input.to(device), ground_truth.to(device)
 
-        prev_loss = 1
-        os.makedirs(output_dir, exist_ok=True)
+        prev_loss = float('inf')  # Changed from 1 to inf for better initialization
+        os.makedirs('./models_test', exist_ok=True)
 
         for step in range(total_steps):
-            model_output, coords = model(model_input)
-            loss = torch.mean((model_output - ground_truth)**2)
+            # Add noise to ground truth during training
+            noisy_ground_truth = add_noise(ground_truth, config.noise_percentage)
             
-            # Validation step
+            model_output, coords = model(model_input)
+            
+            # Calculate loss against noisy ground truth for training
+            noisy_loss = torch.mean((model_output - noisy_ground_truth)**2)
+            
+            # Calculate clean loss for monitoring
+            clean_loss = torch.mean((model_output - ground_truth)**2)
+            
+            # Use noisy loss for optimization
+            loss = noisy_loss
+            
+            # Validation step (using clean data)
             if test:
                 model.eval()
                 with torch.no_grad():
                     val_input, val_truth = val_data[0].to(device), val_data[1].to(device)
+                    val_input = val_input.unsqueeze(0)
                     val_output, _ = model(val_input)
                     val_loss = torch.mean((val_output - val_truth) ** 2)
                 model.train()
             
-            if loss < prev_loss:
+            # Save model based on clean loss instead of noisy loss
+            if clean_loss < prev_loss:
                 model_path_prefix = (
-                    f"{output_dir}/{config.nonlin}_{config.matter}_{config.donor}_{config.lr}_"
+                    f"./models_test/noisy_{config.nonlin}_{config.matter}_{config.donor}_{config.lr}_"
                     f"{5 + 2 * config.encoding_dim}x"
                     f"{config.hidden_features}x"
-                    f"{config.hidden_layers}_"
+                    f"{config.hidden_layers}_noisy_{config.noise_percentage}_"
                 )
                 
-                old_model = f"{model_path_prefix}{prev_loss}.pth"   
-                # Remove the old model file
+                old_model = f"{model_path_prefix}{prev_loss:.6f}.pth"   
                 if os.path.exists(old_model):
                     os.remove(old_model)
                 
-                # Save the new model file
                 torch.save(
                     model.state_dict(),
-                    f"{model_path_prefix}{loss}.pth"
+                    f"{model_path_prefix}{clean_loss:.6f}.pth"
                 )
                 
-                # Update the previous loss
-                prev_loss = loss
+                prev_loss = clean_loss
 
             if test:
-                wandb.log({"loss": loss.item(), "val_loss": val_loss.item()})
+                wandb.log({
+                    "noisy_loss": noisy_loss.item(),
+                    "clean_loss": clean_loss.item(),
+                    "val_loss": val_loss.item()
+                })
             else:
-                wandb.log({"loss": loss.item()})
+                wandb.log({
+                    "noisy_loss": noisy_loss.item(),
+                    "clean_loss": clean_loss.item()
+                })
                 
             if not step % steps_til_summary:
-                print("Step %d, Total loss %0.6f" % (step, loss))
+                print(f"Step {step}, Noisy loss {noisy_loss:.6f}, Clean loss {clean_loss:.6f}")
 
             optim.zero_grad()
-            # accelerator.backward(loss)
             loss.backward()
             optim.step()
             scheduler.step()
@@ -206,7 +251,7 @@ def train(config):
             'max_coords': brain.max_coords.numpy().item()
         }
             
-        with open(f'{output_dir}/max_min_values_{config.gene_order}_sep.csv', 'a') as file:
+        with open(f'./models_new/max_min_values_{config.gene_order}_sep.csv', 'a') as file:
             writer = csv.writer(file)
             row = [str(value) for value in min_max_dict.values()]
             writer.writerow(row)
@@ -218,37 +263,18 @@ def train(config):
         traceback.print_exc()
         logging.error(f"[Error]--{config.gene_order}--{e}")
 
-
  
-    
-def main():
-    # matter: 83 or 246 depends on different atlas
-    wandb.init(project="testing", entity="yuxizheng", config={
-        "nonlin": 'oinr2d', # 'wire' 'gauss' 'mfn' 'relu' 'siren' 'wire2d' 'oinr3d'
-        "matter": "83_new",
-        "gene_order": "se",
-        "lr": 0.003,
-        "hidden_layers": 12,
-        "hidden_features": 512,
-        "total_steps": 200000,
-        "encoding_dim": 11,
-        "donor": "10021",
-        "device": 'cuda:7',
-    })
-    
-    train(wandb.config)
-    
+
 def main_sweep():
-    with wandb.init(project="sweep_nov13", entity="yuxizheng") as run:
+    with wandb.init(project="brain_oinr", entity="yuxizheng") as run:
         config = run.config
         
-        run_name = f"{config.nonlin}_{config.donor}_{config.lr}_{config.encoding_dim}_{config.hidden_features}"
+        run_name = f"noisy_{config.nonlin}_{config.donor}_{config.lr}_{config.noise_percentage}"
         
         run.name = run_name
         run.save()
         
         train(wandb.config)
-
 
 def load_config(config_path="config.yaml"):
     """Load configuration from YAML file."""
@@ -259,16 +285,15 @@ def load_config(config_path="config.yaml"):
 if __name__ == "__main__":
     # Load configuration
     parser = argparse.ArgumentParser()
-    parser.add_argument("--config", type=str)
+    parser.add_argument("--config", type=str, default="config.yaml")
     args = parser.parse_args()
+    config = load_config(args.config)
     
-    if args.config:
-        config = load_config(args.config)
-        if config["sweep"]["enabled"]:
-            sweep_configuration = config["sweep"]["configuration"]
-            project_name = config["sweep"]["project"]
-            
-            sweep_id = wandb.sweep(sweep=sweep_configuration, project=project_name)
-            wandb.agent(sweep_id, function=main_sweep)
+    if config["sweep"]["enabled"]:
+        sweep_configuration = config["sweep"]["configuration"]
+        project_name = config["sweep"]["project"]
+        
+        sweep_id = wandb.sweep(sweep=sweep_configuration, project=project_name)
+        wandb.agent(sweep_id, function=main_sweep)
     else:
-        main()
+        raise ValueError("No sweep configuration found.")

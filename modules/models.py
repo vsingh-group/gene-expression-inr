@@ -7,13 +7,17 @@ from . import relu
 from . import siren
 from . import wire
 from . import wire2d
+from . import oinr2d
+from . import oinr3d
 
 model_dict = {'gauss': gauss,
               'mfn': mfn,
               'relu': relu,
               'siren': siren,
               'wire': wire,
-              'wire2d': wire2d}
+              'wire2d': wire2d,
+              'oinr2d': oinr2d,
+              'oinr3d': oinr3d}
 
 def get_INR(nonlin, in_features, hidden_features, hidden_layers,
             out_features, outermost_linear=True, first_omega_0=30,

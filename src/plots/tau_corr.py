@@ -1,12 +1,11 @@
 import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
+from sklearn.manifold import SpectralEmbedding  # Import SpectralEmbedding
 
-import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
 
-donor_list = ['9861', '10021', '12876', '14380', '15496', '15697']
+# donor_list = ['9861', '10021', '12876', '14380', '15496', '15697']
 donor_list = ['9861', '10021']
 
 raw_tau = pd.read_csv('./ADNI_tau.csv')
@@ -19,6 +18,26 @@ region_meta = pd.read_csv('./atlas-desikankilliany-meta.csv')
 # result_inr = pd.concat(dfs).groupby(level=0).mean()
 # result_inr.to_csv('./data/83_new_interpolation_inrs.csv')
 result_inr = pd.read_csv('./data/83_new_interpolation_inrs.csv', index_col=0)
+
+# option 1, get the embedding from result data
+gene_df_embedding = result_inr.T
+embedding = SpectralEmbedding(n_components=1)
+gene_embedding = embedding.fit_transform(gene_df_embedding)
+gene_df_embedding["se"] = gene_embedding[:, 0].flatten()
+gene_df_embedding = gene_df_embedding.sort_values(by="se", ascending=True)
+print(gene_df_embedding.head())
+result_inr = gene_df_embedding.drop('se', axis=1).T
+
+# # option 2, use original embedding
+# se_9861 = pd.read_csv('./data/abagendata/train_83_new/se_9861.csv')
+# se_10021 = pd.read_csv('./data/abagendata/train_83_new/se_10021.csv')
+# missing_index = set(se_9861.index) - set(result_inr.index)
+# print(result_inr.index)
+# print(se_9861.index)
+# print(se_10021)
+
+# result_inr = result_inr.reindex(index=se_9861.index)
+
 # make abagen have same label as inr
 result_abagen = pd.read_csv('./data/83_new_interpolation_abagen.csv')
 result_abagen.index = result_inr.index
@@ -55,6 +74,7 @@ res.index = res['id']
 res = res.drop(columns=['id'])
 
 print(res.head())
+print(result_abagen.head())
 print(res.shape, result_abagen.shape, result_inr.shape)
 
 def get_corr(result):
@@ -80,52 +100,52 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-# Assuming correlation_abagen and correlation_inr are the correlation dataframes obtained from the get_corr function
 
 # Merge the correlation dataframes on the 'Gene' column
 merged_correlations = pd.merge(correlation_abagen, correlation_inr, on='Gene', suffixes=(' Abagen', ' INR'))
 
-# Melt the dataframe for easier plotting with seaborn
+fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(14, 16))
+
+# Plot 1: Bar plot
 melted_correlations = pd.melt(merged_correlations, id_vars=['Gene'], 
                               value_vars=['Correlation Abagen', 'Correlation INR'],
                               var_name='Method', value_name='Correlation')
 
-# Define a professional color palette
 palette = sns.color_palette(['#4c72b0', '#55a868'])  # Blue and green shades
 
-# Plot the bar plot
-plt.figure(figsize=(14, 8))
-sns.barplot(x='Gene', y='Correlation', hue='Method', data=melted_correlations, palette=palette)
 
-# Add labels and title
-plt.xlabel('Gene')
-plt.ylabel('Correlation with Tau')
-plt.title('Comparison of Gene Correlations with Tau between Abagen and INR Methods')
-plt.xticks(rotation=90)  # Rotate x-axis labels for better readability
+sns.barplot(x='Gene', y='Correlation', hue='Method', data=melted_correlations, palette=palette, ax=ax1)
 
-# Customize legend
-plt.legend(title='Method', loc='upper right')
+ax1.set_xlabel('Genes (Ordered by Spectral Embedding)')
+ax1.set_ylabel('Correlation with Tau')
+ax1.set_title('Comparison of Gene Correlations with Tau between Abagen and INR Methods')
+ax1.tick_params(axis='x', rotation=90)
+ax1.legend(title='Method', loc='upper right')
+ax1.grid(axis='y', linestyle='--', alpha=0.7)
 
-plt.tight_layout()  # Adjust layout to make room for rotated x-axis labels
-plt.grid(axis='y', linestyle='--', alpha=0.7)
-plt.grid(axis='x', linestyle='--', alpha=0.7)
 
-plt.savefig("./results/tau_plot_1.png", bbox_inches='tight', dpi=300)
+# Plot 2: Scatter plot
+# R and p values on the scatterplot
+from scipy.stats import pearsonr
 
-# Plot the scatter plot
-plt.figure(figsize=(10, 6))
-sns.scatterplot(x='Correlation Abagen', y='Correlation INR', data=merged_correlations, s=100, color=palette[0])
+r, p = pearsonr(merged_correlations['Correlation Abagen'], merged_correlations['Correlation INR'])
 
-# Add labels and title
-plt.xlabel('Correlation with Tau (Abagen)')
-plt.ylabel('Correlation with Tau (INR)')
-plt.title('Scatterplot of Gene Correlations with Tau between Abagen and INR Methods')
+sns.scatterplot(x='Correlation Abagen', y='Correlation INR', data=merged_correlations, s=100, color=palette[0], ax=ax2)
 
-# Add a line y=x for reference
-plt.plot([-1, 1], [-1, 1], 'r--')
+ax2.set_xlabel('Correlation with Tau (Abagen)')
+ax2.set_ylabel('Correlation with Tau (INR)')
+ax2.set_title('Scatterplot of Gene Correlations with Tau between Abagen and INR Methods')
 
-plt.tight_layout()  # Adjust layout for better readability
-plt.grid(axis='both', linestyle='--', alpha=0.7)
+ax2.grid(axis='both', linestyle='--', alpha=0.7)
 
-plt.savefig("./results/tau_scatterplot.png", bbox_inches='tight', dpi=300)
+ax2.annotate(f'R = {r:.2f}, p = {p:.2e}', xy=(0.5, 0.9), xycoords='axes fraction', ha='center')
+
+z = np.polyfit(merged_correlations['Correlation Abagen'], merged_correlations['Correlation INR'], 1)
+p = np.poly1d(z)
+xfit = np.linspace(merged_correlations['Correlation Abagen'].min(), merged_correlations['Correlation Abagen'].max(), 50)
+yfit = p(xfit)
+ax2.plot(xfit, yfit, "r--")
+
+plt.tight_layout()
+plt.savefig("./results/combined_tau_plots.png", bbox_inches='tight', dpi=300)
 plt.show()

@@ -9,17 +9,28 @@ from matplotlib.colors import LinearSegmentedColormap
 from tqdm import tqdm
 
 from modules.my_modules import *
+from modules import models
+
 
 device = torch.device("cuda:2" if torch.cuda.is_available() else "cpu")
 min_max_dict_df_path = "./models_test/max_min_values_se_sep.csv"
 
 def load_model(model_path, all_records=False):
     if all_records:
-        model = Siren(in_features=27,
-                      out_features=1,
-                      hidden_features=512,
-                      hidden_layers=12,
-                      outermost_linear=True)
+        model = models.get_INR(
+            nonlin='oinr2d',
+            in_features=27,
+            out_features=1,
+            hidden_features=512,
+            hidden_layers=12,
+            scale=5.0,
+            pos_encode=False,
+            sidelength=256)
+        # model = Siren(in_features=27,
+        #               out_features=1,
+        #               hidden_features=512,
+        #               hidden_layers=12,
+        #               outermost_linear=True)
     else:
         model = Siren(in_features=5,
                       out_features=1,
@@ -57,18 +68,24 @@ def get_result(id, xyz, model, all_records):
     
     coords = torch.tensor(xyz, dtype=torch.float32).to(device)
     coords = normalize_coord(coords)
+    coords = coords.unsqueeze(0)
+    # print(coords.shape)
     
     # print first 5 rows of coords tensor
-    output = model(coords)
+    with torch.no_grad():
+        output = model(coords)
+        # Ensure output is properly flattened
+        result = output[0][:,0].cpu().detach().numpy()
     # output = unnormalize_val(output[0])
     
-    return output[0][:,0].cpu().detach().numpy()
+    return result
 
 def get_results(id, xyz, model, all_records=False, batch_size=2**18):
     results = []
     for i in range(0, len(xyz), batch_size):
         batch_xyz = xyz[i:i+batch_size]
         batch_results = get_result(id, batch_xyz, model, all_records)
+        batch_results = np.asarray(batch_results).flatten()
         results.extend(batch_results)
     return np.array(results)
 
@@ -131,29 +148,31 @@ def inference(id, matter, atlas, model_path, donor, all_records=False, order_val
     new_img = nib.Nifti1Image(plot_data, affine=image.affine)
     
     if all_records:
-        save_path = f'./nii_{donor}_{matter}/{id}_{matter}_inrs.nii.gz'
+        save_path = f'./oinr_nii_{donor}_{matter}/{id}_{matter}_inrs.nii.gz'
     else:
-        save_path = f'./nii_{donor}_{matter}/{id}_{matter}_inr.nii.gz'
+        save_path = f'./nii_{donor}_{matter}_sep/{id}_{matter}_inr.nii.gz'
     nib.save(new_img, save_path)
     print("Interpolate Success!")
 
 
 # id = "1058685"
 matter = "83_new" # "grey" / "246" / "83"
-donor = "10021"
+donor = "9861"
 # atlas = f"MNI152_T1_1mm_brain_{matter}_mask_int"
 # atlas = 'BN_Atlas_246_1mm'
 atlas = 'atlas-desikankilliany'
 all_records = True
 df = pd.read_csv(f"./data/abagendata/train_{matter}/se_{donor}.csv")
-os.makedirs(f'./nii_{donor}_{matter}', exist_ok=True)
+os.makedirs(f'./oinr_nii_{donor}_{matter}', exist_ok=True)
 
 for i, row in tqdm(df.iterrows(), total=df.shape[0]):
     id = row['gene_symbol']
     order_val = row['se']
     if all_records:
         # model_path = f'./models_test/model_{matter}_0.0001_21x512x12_7.37e-13.pth'
-        model_path = f'./models_new/siren_83_new_10021_0.0001_27x512x12_7.27e-07.pth'
+        # model_path = f'./models_new/siren_83_new_10021_0.0001_27x512x12_7.27e-07.pth'
+        # model_path = f'./models_new/oinr2d_83_new_9861_0.003_27x512x12_9.126124496106058e-06.pth'
+        model_path = f'./models_oinr/oinr2d_83_new_9861_0.003_27x512x12_6.27e-08.pth'
     else:
-        model_path = f'./models_test/se_{id}.pth'
+        model_path = f'./models_test/sep/se_{id}.pth'
     inference(id, matter, atlas, model_path, donor, all_records, order_val)

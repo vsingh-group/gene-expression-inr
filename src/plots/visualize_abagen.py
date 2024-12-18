@@ -8,7 +8,7 @@ import nibabel as nib
 # id = "A1BG"
 
 def get_abagen_result(id, donor, matter):
-    df = pd.read_csv(f"./data/{matter}_interpolation_inrs.csv", index_col=0)
+    df = pd.read_csv(f"./data/{matter}_interpolation_abagen.csv", index_col=0)
     idx = df.columns.get_loc(id)
     columns = df.columns
     df_tensor = df.iloc[:, idx].values
@@ -34,7 +34,7 @@ def map_abagen_to_nii(id, atlas, matter, donor):
                 atlas_data[tuple(coord)] = value
 
     new_img = nib.Nifti1Image(atlas_data, affine=affine)
-    nib.save(new_img, f'./result_ibf_2full+mirror_TT/nii_inrs/{id}_{matter}_inrs.nii.gz')
+    nib.save(new_img, f'./result_ibf_2full+mirror_TT/nii_abagen/{id}_{matter}_abagen.nii.gz')
 
 matter = "grey" # "grey"
 donor = "9861"

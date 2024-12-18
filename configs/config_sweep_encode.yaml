@@ -1,0 +1,28 @@
+sweep:
+  enabled: true
+  configuration:
+    method: "grid"  # bayes
+    metric:
+      goal: "minimize"
+      name: "loss"
+    parameters:
+      nonlin:
+        values: ["siren"]
+      matter:
+        values: ["83_new"]
+      gene_order:
+        values: ["se"]
+      lr:
+        values: [1e-4]
+      hidden_layers:
+        values: [12]
+      hidden_features:
+        values: [512]
+      total_steps:
+        values: [10000]
+      encoding_dim:
+        values: [6, 7, 8, 9, 10]
+      donor:
+        values: ["9861", "10021"]
+        # values: ["9861", "10021", "12876", "14380", "15496", "15697"]
+  project: "donor_9861_siren"

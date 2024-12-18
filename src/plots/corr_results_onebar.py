@@ -1,10 +1,22 @@
 import pandas as pd
 import matplotlib.pyplot as plt
+from sklearn.manifold import SpectralEmbedding
+from scipy.stats import pearsonr
+import numpy as np
 
 # Load data
 matter = "83_new"
 df_abagen = pd.read_csv(f"./data/{matter}_interpolation_abagen.csv", index_col='label')
 df_inravg = pd.read_csv(f"./data/{matter}_interpolation_inrs.csv", index_col='label')
+
+# option 1, get the embedding from result data
+gene_df_embedding = df_inravg.T
+embedding = SpectralEmbedding(n_components=1)
+gene_embedding = embedding.fit_transform(gene_df_embedding)
+gene_df_embedding["se"] = gene_embedding[:, 0].flatten()
+gene_df_embedding = gene_df_embedding.sort_values(by="se", ascending=True)
+print(gene_df_embedding.head())
+df_inravg = gene_df_embedding.drop('se', axis=1).T
 
 # Check dimensions of the dataframes
 print(df_abagen.shape, df_inravg.shape)
@@ -24,23 +36,38 @@ avg_correlation = correlation_df['Correlation'].mean()
 print(f"Average Correlation: {avg_correlation}")
 
 # Plotting
-plt.figure(figsize=(14, 8))
-correlation_df['Correlation'].plot(kind='bar', color='#4c72b0')
-plt.title(f'Gene Correlation between Abagen and INR Bar Plot (Average Correlation: {avg_correlation:.2f})')
-plt.xlabel('Genes')
-plt.ylabel('Correlation')
-plt.grid(axis='y', linestyle='--', alpha=0.7)
-plt.grid(axis='x', linestyle='--', alpha=0.7)
-plt.tight_layout()
-plt.savefig("./results/corr_barplot.png", bbox_inches='tight', dpi=300)
-plt.show()
+fig, axs = plt.subplots(2, 1, figsize=(14, 16))
 
-# add a histogram of correlation
-plt.figure(figsize=(14, 8))
-plt.hist(correlation_df['Correlation'], bins=30, color='#4c72b0', edgecolor='black')
-plt.title(f'Gene Correlation between Abagen and INR Histogram (Average Correlation: {avg_correlation:.2f})')
-plt.xlabel('Genes')
-plt.ylabel('Correlation')
-plt.grid(axis='both', linestyle='--', alpha=0.7)
+# Bar plot
+correlation_df['Correlation'].plot(kind='bar', ax=axs[0], color='#4c72b0')
+axs[0].set_title(f'Gene Correlation between Abagen and INR Bar Plot (Average Correlation: {avg_correlation:.2f})')
+axs[0].set_xlabel('Genes (Ordered by Spectral Embedding)')
+axs[0].set_ylabel('Correlation')
+axs[0].grid(axis='y', linestyle='--', alpha=0.7)
+axs[0].grid(axis='x', linestyle='--', alpha=0.7)
+
+# Scatter plot
+for gene in df_abagen.columns:
+    axs[1].scatter(df_abagen[gene], df_inravg[gene], alpha=0.5, color='#4c72b0')
+
+axs[1].set_xlabel('Abagen Expression Values')
+axs[1].set_ylabel('Inravg Expression Values')
+axs[1].set_title('Scatter Plot of Gene Expression Values')
+
+# Calculate R and p values
+r, p = pearsonr(df_abagen.mean(axis=1), df_inravg.mean(axis=1))
+
+# Annotate R and p values
+axs[1].annotate(f'R = {r:.2f}, p = {p:.2e}', xy=(0.5, 0.9), xycoords='axes fraction', ha='center')
+
+# Add a red fitted line
+z = np.polyfit(df_abagen.mean(axis=1), df_inravg.mean(axis=1), 1)
+p = np.poly1d(z)
+xfit = np.linspace(df_abagen.min().min(), df_abagen.max().max(), 50)
+yfit = p(xfit)
+axs[1].plot(xfit, yfit, "r--")
+axs[1].grid(axis='both', linestyle='--', alpha=0.7)
+
 plt.tight_layout()
-plt.savefig("./results/corr_hist.png", bbox_inches='tight', dpi=300)
+plt.savefig("./results/combined_inr_vs_abg_plots.png", bbox_inches='tight', dpi=300)
+plt.close()
