@@ -4,9 +4,12 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
+from matplotlib.ticker import FormatStrFormatter
 
 
 STEPS = 500
+
+
 
 def process_noisy_runs(project_name):
     api = wandb.Api()
@@ -132,14 +135,14 @@ df_9861_noisy, df_10021_noisy = process_noisy_runs("yuxizheng/donor_9861_siren_n
 plt.style.use('seaborn-v0_8-paper') # ggplot, classic, seaborn-v0_8-paper, seaborn-v0_8-poster, bmh
 
 plt.rcParams.update({
-    'font.family': 'serif',
-    'font.size': 10,
-    'axes.labelsize': 12,
-    'axes.titlesize': 14,
-    'xtick.labelsize': 12,
-    'ytick.labelsize': 12,
-    'legend.fontsize': 8,
-    'figure.titlesize': 16,
+    # 'font.family': 'serif',
+    'font.size': 14,
+    'axes.labelsize': 20,
+    'axes.titlesize': 20,
+    'xtick.labelsize': 14,
+    'ytick.labelsize': 14,
+    'legend.fontsize': 13,
+    'figure.titlesize': 20,
     'axes.grid': True,
     'grid.linestyle': '--',
     'grid.alpha': 0.5
@@ -232,7 +235,7 @@ def plot_all_comparisons(df_9861, df_10021, df_9861_noisy, df_10021_noisy, save_
     for idx, label in enumerate(labels):
         # Position the label on the left side of the first plot in each row
         axs[idx, 0].text(-0.2, 1.1, label, transform=axs[idx, 0].transAxes,
-                        fontsize=16, fontweight='bold')
+                        fontsize=20, fontweight='bold')
     
     for i, (param, title) in enumerate(zip(param_names, titles_9861)):
         create_parameter_plot(axs[0, i], comparisons_9861[param], param, title)
@@ -276,22 +279,22 @@ def plot_all_comparisons(df_9861, df_10021, df_9861_noisy, df_10021_noisy, save_
     create_noise_line_plot(axs[3, 1], noise_comparisons_10021['noisy_loss'], noise_titles_10021[1])
     create_noise_line_plot(axs[3, 2], noise_comparisons_10021['val_loss'], noise_titles_10021[2])
     create_noise_scatter_plot(axs[3, 3], noise_comparisons_10021['test_loss'], noise_titles_10021[3])
-    
+    # axs[2, 3].yaxis.set_major_formatter(FormatStrFormatter('%.3f'))
+
     plt.tight_layout()
     
     if save_path:
         # Save both PNG and SVG versions
-        base_name = save_path.rsplit('.', 1)[0]  # Remove any existing extension
-        png_path = f"{base_name}_{STEPS}.png"
-        svg_path = f"{base_name}_{STEPS}.svg"
+        # png_path = f"{base_name}_{STEPS}.png"
+        pdf_path = f"{save_path}_{STEPS}.pdf"
         
-        plt.savefig(png_path, bbox_inches='tight', dpi=300)
-        plt.savefig(svg_path, bbox_inches='tight', format='svg')
+        # plt.savefig(png_path, bbox_inches='tight', dpi=300)
+        plt.savefig(pdf_path, bbox_inches='tight', format='pdf')
     
     return fig, axs
 
 # Usage
-fig, axs = plot_all_comparisons(df_9861, df_10021, df_9861_noisy, df_10021_noisy, save_path='parameter_comparison')
+fig, axs = plot_all_comparisons(df_9861, df_10021, df_9861_noisy, df_10021_noisy, save_path='./manuscript_imgs/parameter_comparison')
 plt.show()
 
 

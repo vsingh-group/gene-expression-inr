@@ -86,5 +86,7 @@ for i in range(num_rows):
 
 plt.tight_layout()
 
-plt.savefig("tau_plot_2.png", bbox_inches='tight', dpi=300)
+plt.savefig("./manuscript_imgs/appendix/tau_plot_violin.png", bbox_inches='tight', dpi=300)
+plt.savefig("./manuscript_imgs/appendix/tau_plot_violin.svg", bbox_inches='tight', format='svg')
+
 plt.show()

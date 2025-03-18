@@ -3,7 +3,24 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.manifold import SpectralEmbedding  # Import SpectralEmbedding
+from scipy.stats import pearsonr
 
+plt.style.use('seaborn-v0_8-paper')
+
+# Update plotting parameters
+plt.rcParams.update({
+    # 'font.family': 'science',
+    'font.size': 10,
+    'axes.labelsize': 20,
+    'axes.titlesize': 20,
+    'xtick.labelsize': 10,
+    'ytick.labelsize': 12,
+    'legend.fontsize': 10,
+    'figure.titlesize': 20,
+    'axes.grid': True,
+    'grid.linestyle': '--',
+    'grid.alpha': 0.5
+})
 
 # donor_list = ['9861', '10021', '12876', '14380', '15496', '15697']
 donor_list = ['9861', '10021']
@@ -123,23 +140,72 @@ ax1.tick_params(axis='x', rotation=90)
 ax1.legend(title='Method', loc='upper right')
 ax1.grid(axis='y', linestyle='--', alpha=0.7)
 
+red_genes = ['NEAT1', 'JAZF1', 'HSPH1']
+purple_genes = ['TMEM41A', 'PTK2B', 'ZNF184']
 
-# Plot 2: Scatter plot
-# R and p values on the scatterplot
-from scipy.stats import pearsonr
+unique_genes = melted_correlations['Gene'].unique()
+bar_positions = range(len(unique_genes))
 
+# Add light blue background for special genes and color their tick labels
+for i, gene in enumerate(unique_genes):
+    if gene in red_genes or gene in purple_genes:
+        # Add light blue background spanning the width of both bars for this gene
+        # Each gene has 2 bars (Abagen and INR methods)
+        # In a grouped bar chart, the width of each group is 1, and there are 2 bars per group
+        rect_start = i - 0.4  # Adjust based on bar width
+        rect_width = 0.8     # Adjust based on the spacing between groups
+        rect = plt.Rectangle((rect_start, ax1.get_ylim()[0]), rect_width, ax1.get_ylim()[1] - ax1.get_ylim()[0],
+                         facecolor='grey', alpha=0.3, zorder=-1)
+        ax1.add_patch(rect)
+
+
+for tick in ax1.get_xticklabels():
+    gene_name = tick.get_text()
+    if gene_name in red_genes:
+        tick.set_color('red')
+        tick.set_fontweight('bold')
+    elif gene_name in purple_genes:
+        tick.set_color('purple')
+        tick.set_fontweight('bold')
+
+
+# Plot 2: Scatter plot with gene names
+# Calculate R and p values
 r, p = pearsonr(merged_correlations['Correlation Abagen'], merged_correlations['Correlation INR'])
 
-sns.scatterplot(x='Correlation Abagen', y='Correlation INR', data=merged_correlations, s=100, color=palette[0], ax=ax2)
+
+# Create a basic scatter plot first
+scatter = ax2.scatter(
+    merged_correlations['Correlation Abagen'], 
+    merged_correlations['Correlation INR'], 
+    s=100, color=palette[0]
+)
+
+# Add gene labels to each point
+for i, row in merged_correlations.iterrows():
+    x, y = row['Correlation Abagen'], row['Correlation INR']
+    if row['Gene'] in red_genes:
+        point = ax2.scatter(x, y, s=100, color='red', zorder=10)
+        ax2.annotate(row['Gene'],
+                     (x, y),
+                     xytext=(7, 0), textcoords='offset points', 
+                    color='red', fontweight='bold', fontsize=10)
+    elif row['Gene'] in purple_genes:
+        point = ax2.scatter(x, y, s=100, color='purple', zorder=11)
+        ax2.annotate(row['Gene'],
+                     (x, y),
+                     xytext=(7, 0), textcoords='offset points', 
+                    color='purple', fontweight='bold', fontsize=11)
 
 ax2.set_xlabel('Correlation with Tau (Abagen)')
 ax2.set_ylabel('Correlation with Tau (INR)')
 ax2.set_title('Scatterplot of Gene Correlations with Tau between Abagen and INR Methods')
-
 ax2.grid(axis='both', linestyle='--', alpha=0.7)
 
-ax2.annotate(f'R = {r:.2f}, p = {p:.2e}', xy=(0.5, 0.9), xycoords='axes fraction', ha='center')
+# Add correlation statistics
+ax2.annotate(f'R = {r:.2f}, p = {p:.2e}', xy=(0.5, 0.9), xycoords='axes fraction', ha='center', fontsize=14)
 
+# Add regression line
 z = np.polyfit(merged_correlations['Correlation Abagen'], merged_correlations['Correlation INR'], 1)
 p = np.poly1d(z)
 xfit = np.linspace(merged_correlations['Correlation Abagen'].min(), merged_correlations['Correlation Abagen'].max(), 50)
@@ -147,5 +213,5 @@ yfit = p(xfit)
 ax2.plot(xfit, yfit, "r--")
 
 plt.tight_layout()
-plt.savefig("./results/combined_tau_plots.png", bbox_inches='tight', dpi=300)
+plt.savefig("./manuscript_imgs/combined_tau_plots_with_labels.pdf", bbox_inches='tight', format='pdf')
 plt.show()

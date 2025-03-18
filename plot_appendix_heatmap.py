@@ -108,7 +108,9 @@ def draw(unsorted_matrix_1, sorted_matrix_1, unsorted_matrix_2, sorted_matrix_2,
     plt.colorbar(axes[1, 1].collections[0], cax=cbar_ax, orientation='horizontal')
 
     plt.tight_layout(rect=[0, 0.01, 1, 1])  # Adjust layout to fit colorbar
-    plt.savefig(f'{name}_gene_heatmap_comparison_{donor_1}_vs_{donor_2}.png', dpi=300, bbox_inches='tight')
+    plt.savefig(f'./manuscript_imgs/appendix/{name}_gene_heatmap_comparison_{donor_1}_vs_{donor_2}.png', dpi=300, bbox_inches='tight')
+    plt.savefig(f'./manuscript_imgs/appendix/{name}_gene_heatmap_comparison_{donor_1}_vs_{donor_2}.svg', format='svg', bbox_inches='tight')
+
     plt.close()
 
 
