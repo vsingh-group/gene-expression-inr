@@ -96,3 +96,29 @@ plt.tight_layout()
 plt.savefig("./manuscript_imgs/combined_inr_vs_abg_plots.pdf", bbox_inches='tight', format='pdf')
 
 plt.close()
+
+gene_order = gene_df_embedding.index.to_list()
+print(gene_order)
+print(len(gene_order))
+
+# Round SE values to 4 decimal places
+gene_df_embedding_formatted = gene_df_embedding[['se']].round(4)
+
+# Combine gene_symbol and se with "&"
+gene_df_embedding_formatted["combined"] = gene_df_embedding_formatted.index + " & " + gene_df_embedding_formatted["se"].astype(str)
+
+df = gene_df_embedding_formatted.drop(columns=["se"])
+# drop index column
+df = df.reset_index(drop=True)
+
+columns = {}
+for i in range(4):
+    col_data = df.iloc[i*25:(i+1)*25].reset_index(drop=True)
+    columns[f'col{i+1}'] = col_data['combined'].to_list()
+
+
+reshaped_df = pd.DataFrame(columns)
+reshaped_df['col4'] = reshaped_df['col4'].astype(str) + ' \\\\'
+
+# save
+reshaped_df.to_csv('./data/83_new_gene_order_by_se.csv', index=False)

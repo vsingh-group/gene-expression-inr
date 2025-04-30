@@ -33,84 +33,54 @@ def get_matrix(donor, sort=True):
 
 def draw(unsorted_matrix_1, sorted_matrix_1, unsorted_matrix_2, sorted_matrix_2, donor_1, donor_2, name):
     # Create a 2x2 grid of heatmaps
-    
     fig, axes = plt.subplots(2, 2, figsize=(20, 20), gridspec_kw={'width_ratios': [1, 1], 'wspace': 0.05, 'hspace': 0.2})
     
-    # Set common tick label size
+    # Set common tick label size and title font size
     tick_label_size = 10
+    title_fontsize = 18
 
     # Unsorted heatmap for donor 1 (top left)
-    sns.heatmap(unsorted_matrix_1, 
-                ax=axes[0, 0],
-                annot=False,
-                cmap='coolwarm',
-                linewidths=.5,
-                cbar=False,
-                square=True)
-
-    axes[0, 0].set_title(f'(a) Unsorted {name} Gene Matrix Heatmap Donor {donor_1}')
+    sns.heatmap(unsorted_matrix_1, ax=axes[0, 0], annot=False, cmap='coolwarm', linewidths=.5, cbar=False, square=True)
+    axes[0, 0].set_title(r'$\mathbf{a.}$ ' + f'Unsorted {name} Gene Correlation Donor {donor_1}', fontsize=title_fontsize)
     axes[0, 0].xaxis.tick_top()
     axes[0, 0].set_xticklabels(axes[0, 0].get_xticklabels(), rotation=90, size=tick_label_size)
     axes[0, 0].xaxis.set_label_position('top')
-    axes[0, 0].tick_params(left=False, bottom=False)  # Remove ticks
-    axes[0, 0].set_ylabel('')  # Remove y-axis label
+    axes[0, 0].tick_params(left=False, bottom=False)
+    axes[0, 0].set_ylabel('')
 
     # Sorted heatmap for donor 1 (top right)
-    sns.heatmap(sorted_matrix_1, 
-                ax=axes[0, 1],
-                annot=False,
-                cmap='coolwarm',
-                linewidths=.5,
-                cbar=False,
-                square=True)
-
-    axes[0, 1].set_title(f'(b) Spectrum Embedding Sorted {name} Gene Matrix Heatmap Donor {donor_1}')
+    sns.heatmap(sorted_matrix_1, ax=axes[0, 1], annot=False, cmap='coolwarm', linewidths=.5, cbar=False, square=True)
+    axes[0, 1].set_title(r'$\mathbf{b.}$ ' + f'Sorted {name} Gene Correlation Donor {donor_1}', fontsize=title_fontsize)
     axes[0, 1].xaxis.tick_top()
     axes[0, 1].set_xticklabels(axes[0, 1].get_xticklabels(), rotation=90, size=tick_label_size)
     axes[0, 1].xaxis.set_label_position('top')
-    axes[0, 1].tick_params(left=False, bottom=False)  # Remove ticks
+    axes[0, 1].tick_params(left=False, bottom=False)
     axes[0, 1].set_ylabel('')
 
     # Unsorted heatmap for donor 2 (bottom left)
-    sns.heatmap(unsorted_matrix_2, 
-                ax=axes[1, 0],
-                annot=False,
-                cmap='coolwarm',
-                linewidths=.5,
-                cbar=False,
-                square=True)
-
-    axes[1, 0].set_title(f'(c) Unsorted {name} Gene Matrix Heatmap Donor {donor_2}')
+    sns.heatmap(unsorted_matrix_2, ax=axes[1, 0], annot=False, cmap='coolwarm', linewidths=.5, cbar=False, square=True)
+    axes[1, 0].set_title(r'$\mathbf{c.}$ ' + f'Unsorted {name} Gene Correlation Donor {donor_2}', fontsize=title_fontsize)
     axes[1, 0].xaxis.tick_top()
     axes[1, 0].set_xticklabels(axes[1, 0].get_xticklabels(), rotation=90, size=tick_label_size)
     axes[1, 0].xaxis.set_label_position('top')
-    axes[1, 0].tick_params(left=False, bottom=False)  # Remove ticks
-    axes[1, 0].set_ylabel('')  # Remove y-axis label
+    axes[1, 0].tick_params(left=False, bottom=False)
+    axes[1, 0].set_ylabel('')
 
     # Sorted heatmap for donor 2 (bottom right)
-    sns.heatmap(sorted_matrix_2, 
-                ax=axes[1, 1],
-                annot=False,
-                cmap='coolwarm',
-                linewidths=.5,
-                cbar=False,
-                square=True)
-
-    axes[1, 1].set_title(f'(d) Spectrum Embedding Sorted {name} Gene Matrix Heatmap Donor {donor_2}')
+    sns.heatmap(sorted_matrix_2, ax=axes[1, 1], annot=False, cmap='coolwarm', linewidths=.5, cbar=False, square=True)
+    axes[1, 1].set_title(r'$\mathbf{d.}$ ' + f'Sorted {name} Gene Correlation Donor {donor_2}', fontsize=title_fontsize)
     axes[1, 1].xaxis.tick_top()
     axes[1, 1].set_xticklabels(axes[1, 1].get_xticklabels(), rotation=90, size=tick_label_size)
     axes[1, 1].xaxis.set_label_position('top')
-    axes[1, 1].tick_params(left=False, bottom=False)  # Remove ticks
+    axes[1, 1].tick_params(left=False, bottom=False)
     axes[1, 1].set_ylabel('')
 
-    # Add a common color bar for all heatmaps below the 2x2 grid
-    cbar_ax = fig.add_axes([0.14, 0.08, 0.745, 0.02])  # Reduced gap by lowering the 'y' value to 0.01
+    # Add a common color bar for all heatmaps
+    cbar_ax = fig.add_axes([0.14, 0.08, 0.745, 0.02])
     plt.colorbar(axes[1, 1].collections[0], cax=cbar_ax, orientation='horizontal')
 
-    plt.tight_layout(rect=[0, 0.01, 1, 1])  # Adjust layout to fit colorbar
-    plt.savefig(f'./manuscript_imgs/appendix/{name}_gene_heatmap_comparison_{donor_1}_vs_{donor_2}.png', dpi=300, bbox_inches='tight')
-    plt.savefig(f'./manuscript_imgs/appendix/{name}_gene_heatmap_comparison_{donor_1}_vs_{donor_2}.svg', format='svg', bbox_inches='tight')
-
+    plt.tight_layout(rect=[0, 0.01, 1, 1])
+    plt.savefig(f'./manuscript_imgs/appendix/{name}_gene_heatmap_comparison_{donor_1}_vs_{donor_2}.pdf', format='pdf', bbox_inches='tight')
     plt.close()
 
 
