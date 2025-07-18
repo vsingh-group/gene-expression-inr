@@ -69,7 +69,7 @@ conda activate inr
 
 ### Data Release
 
-Google Drive: https://drive.google.com/drive/folders/1jWC3wr3UwMYsgNXoxQ1xyHWDuUQ_xl3G?usp=drive_link
+Google Drive: https://drive.google.com/drive/folders/1zi8rKqYVd7GsrcfZ-EuZtzsQwL-zA_3V?usp=drive_link
 
 ## Acknowledgements
 
