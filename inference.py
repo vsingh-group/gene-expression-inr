@@ -169,10 +169,10 @@ for i, row in tqdm(df.iterrows(), total=df.shape[0]):
     id = row['gene_symbol']
     order_val = row['se']
     if all_records:
-        # model_path = f'./models_test/model_{matter}_0.0001_21x512x12_7.37e-13.pth'
+        model_path = f'./models_test/model_{matter}_0.0001_21x512x12_7.37e-13.pth'
         # model_path = f'./models_new/siren_83_new_10021_0.0001_27x512x12_7.27e-07.pth'
         # model_path = f'./models_new/oinr2d_83_new_9861_0.003_27x512x12_9.126124496106058e-06.pth'
-        model_path = f'./models_oinr/oinr2d_83_new_9861_0.003_27x512x12_6.27e-08.pth'
+        # model_path = f'./models_oinr/oinr2d_83_new_9861_0.003_27x512x12_6.27e-08.pth'
     else:
         model_path = f'./models_test/sep/se_{id}.pth'
     inference(id, matter, atlas, model_path, donor, all_records, order_val)
